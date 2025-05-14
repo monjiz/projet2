@@ -1,0 +1,2 @@
+C:/Users/omega/Desktop/ProjetQartis-main/android/app/.cxx/Debug/305cx4c7/x86/CMakeFiles/edit_cache.dir
+C:/Users/omega/Desktop/ProjetQartis-main/android/app/.cxx/Debug/305cx4c7/x86/CMakeFiles/rebuild_cache.dir
