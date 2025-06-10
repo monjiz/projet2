@@ -177,39 +177,85 @@ class AuthService {
 
 
   
- // =================== GOOGLE SIGNIN ===================
-  Future<String> loginWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) throw Exception('Connexion Google annulée');
+Future<Map<String, dynamic>> loginWithGoogle() async {
+  // Initialisation de GoogleSignIn avec forceAccountChooser
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email'],
+    signInOption: SignInOption.standard,
+  );
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
-      );
+  try {
+    // 1. Authentification avec Google
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) throw Exception('Connexion Google annulée');
 
-      final userCredential = await _auth.signInWithCredential(credential);
-      final idToken = await userCredential.user?.getIdToken();
-
-      final response = await http.post(
-        Uri.parse('https://api.platform.dat.tn/api/v1/auth/google'), // Corrigé ici
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['type']; // 'admin', 'client', 'travailleur'
-      } else {
-        log('Erreur backend Google login: ${response.body}');
-        throw Exception('Erreur backend : ${response.body}');
-      }
-    } catch (e) {
-      log('Erreur Google sign-in: $e');
-      throw Exception('Erreur de connexion Google.');
+    // 2. Obtenir les informations d'authentification
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    
+    // 3. Vérifier que le token ID est disponible
+    if (googleAuth.idToken == null) {
+      throw Exception('Token Google ID non disponible');
     }
+
+    // 4. Créer les credentials Firebase
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+      accessToken: googleAuth.accessToken,
+    );
+
+    // 5. Connexion à Firebase
+    final userCredential = await _auth.signInWithCredential(credential);
+    
+    // 6. Obtenir le token Firebase
+    final idToken = await userCredential.user?.getIdToken();
+    if (idToken == null) throw Exception('Token Firebase invalide');
+
+    // 7. Envoyer le token à votre backend
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/google'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'token': idToken,
+      }),
+    );
+
+    log('Google login response status code: ${response.statusCode}');
+    log('Google login response body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final authData = data['data'] as Map<String, dynamic>? ?? {};
+      final prefs = await SharedPreferences.getInstance();
+
+      if (authData['accessToken'] != null) {
+        await prefs.setString('auth_token', authData['accessToken']);
+        log('Token sauvegardé : ${authData['accessToken']}');
+      }
+      if (authData['user']?['id'] != null) {
+        await prefs.setString('user_id', authData['user']['id']);
+        log('User ID sauvegardé : ${authData['user']['id']}');
+      }
+
+      return data;
+    } else {
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
+      throw Exception(errorMessage);
+    }
+  } on SocketException {
+    throw Exception('Erreur réseau. Vérifiez votre connexion Internet.');
+  } on FormatException {
+    throw Exception('Réponse du serveur invalide.');
+  } catch (e) {
+    throw Exception('Erreur de connexion Google: ${e.toString()}');
+  } finally {
+    // Optionnel: Déconnexion de GoogleSignIn pour forcer le choix à la prochaine connexion
+    await _googleSignIn.signOut();
   }
+}
 
   // =================== FORGOT PASSWORD ===================
   Future<void> sendPasswordResetEmail(String email) async {

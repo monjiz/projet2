@@ -108,6 +108,12 @@ class _SignupScreenState extends State<SignupScreen> {
                           Center(
                             child: Column(
                               children: [
+                                 Image.asset(
+                              'assets/images/logo2.png',
+                              height: 100,
+                              width: 200,
+                              fit: BoxFit.contain,
+                            ),
                                 const SizedBox(height: 0),
                                 const Text(
                                   'Sign Up',
@@ -122,6 +128,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
+                                     const SizedBox(height: 0),
+                           
                                     const Text("Already have an account? "),
                                     GestureDetector(
                                       onTap: () => Navigator.push(
@@ -321,7 +329,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 17, horizontal: 113),
                                 ),
-                          const SizedBox(height: 8),
+                       /*   const SizedBox(height: 8),
                           const Center(
                             child: Text(
                               'Or',
@@ -339,7 +347,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderColor: Colors.grey[300]!,
                             borderRadius: 10,
                             backgroundColor: Colors.white,
-                          ),
+                          ),*/
                          /* const SizedBox(height: 8),
                           SocialButton(
                             icon: 'assets/images/facebook.png',

@@ -13,7 +13,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       : _authService = authService,
         super(LoginInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
-  //  on<GoogleSignInSubmitted>(_onGoogleSignInSubmitted); // ← Ajout de l'événement Google
+  on<GoogleSignInSubmitted>(_onGoogleSignInSubmitted); // ← Ajout de l'événement Google
   }
 
   Future<void> _onLoginSubmitted(LoginSubmitted event, Emitter<LoginState> emit) async {
@@ -51,52 +51,48 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
- /*Future<void> _onGoogleSignInSubmitted(GoogleSignInSubmitted event, Emitter<LoginState> emit) async {
+Future<void> _onGoogleSignInSubmitted(
+    GoogleSignInSubmitted event, 
+    Emitter<LoginState> emit
+) async {
   emit(LoginLoading());
 
   try {
-    // 1. Connexion avec Google
-    final GoogleSignInAccount? googleUser = await GoogleSignIn(scopes: ['email', 'profile']).signIn();
-    if (googleUser == null) {
-      emit(LoginFailure(error: "Connexion Google annulée."));
-      return;
-    }
+    final response = await _authService.loginWithGoogle();
 
-    // 2. Authentification avec Firebase
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    final String? idToken = googleAuth.idToken;
-
-    if (idToken == null || idToken.trim().isEmpty) {
-      emit(LoginFailure(error: "Échec de la connexion Google : Token Firebase invalide."));
-      return;
-    }
-
-    log("[log] Firebase ID Token : $idToken");
-
-    // 3. Appel au backend avec le token Firebase
-    final response = await _authService.loginWithGoogle(idToken);
-
-    // 4. Traitement de la réponse
-    if (response.containsKey('accessToken') || response['user']?['id'] != null) {
-      final type = response['user']?['type'] ?? 'client';
-      log("Connexion Google réussie : Réponse = $response");
-      emit(LoginSuccess(type: type));
+    // Vérification plus robuste de la réponse
+    if (response.containsKey('data') && 
+        response['data'] is Map<String, dynamic> &&
+        (response['data']['accessToken'] != null || 
+         (response['data']['user'] != null && response['data']['user']['id'] != null))) {
+      
+      final userType = response['data']['user']?['type']?.toString().toLowerCase() ?? 'client';
+      log("Connexion Google réussie. Type d'utilisateur: $userType");
+      
+      emit(LoginSuccess(type: userType));
     } else {
-      log("Échec de la connexion Google : réponse incomplète.");
-      emit(LoginFailure(error: "Erreur : Authentification Google incomplète."));
+      log("Réponse incomplète: ${response.toString()}");
+      emit(LoginFailure(
+          error: "La réponse du serveur est incomplète. Veuillez réessayer."));
     }
-  } catch (e) {
-    // 5. Gestion des erreurs
+  } on Exception catch (e) {
     String errorMessage;
-    if (e.toString().contains('Erreur réseau')) {
-      errorMessage = "Erreur de connexion au serveur. Vérifiez votre connexion Internet.";
+    
+    // Gestion plus précise des erreurs
+    if (e.toString().contains('Connexion Google annulée')) {
+      errorMessage = "Vous avez annulé la connexion avec Google.";
+    } else if (e.toString().contains('Erreur réseau')) {
+      errorMessage = "Problème de connexion internet. Vérifiez votre réseau.";
+    } else if (e.toString().contains('Token') || 
+               e.toString().contains('jeton')) {
+      errorMessage = "Erreur d'authentification. Veuillez réessayer.";
     } else {
-      errorMessage = "Erreur Google : ${e.toString().replaceAll('Exception: ', '')}";
+      errorMessage = "Erreur lors de la connexion avec Google: ${e.toString().replaceAll('Exception: ', '')}";
     }
-
-    log("Erreur Google Sign-In : $e");
+    
+    log("Erreur Google Sign-In: ${e.toString()}");
     emit(LoginFailure(error: errorMessage));
   }
-}*/
+}
 
 }
