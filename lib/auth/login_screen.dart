@@ -1,14 +1,20 @@
-import 'dart:developer';
-import 'package:auth_firebase/auth/auth_service.dart';
-import 'package:auth_firebase/auth/signup_screen.dart';
-import 'package:auth_firebase/admin_screen.dart'; // Écran pour les administrateurs
-import 'package:auth_firebase/client_screen.dart';
-import 'package:auth_firebase/travailleur_screen.dart';
-import 'package:auth_firebase/widgets/button.dart';
-import 'package:auth_firebase/widgets/textfield.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import pour FirebaseAuth
+import 'package:auth_firebase/auth/login/bloc/login_bloc.dart';
+import 'package:auth_firebase/auth/login/bloc/login_event.dart';
+import 'package:auth_firebase/auth/login/bloc/login_state.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/admin_screen.dart';
+import 'package:auth_firebase/presentation/screens/ClientScreens/client_screen.dart';
+import 'package:auth_firebase/presentation/screens/WorkerScreens/travailleur_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
+import 'package:auth_firebase/auth/auth_service.dart';
+import 'package:auth_firebase/auth/forgot_password_screen.dart';
+import 'package:auth_firebase/auth/signup_screen.dart';
+
+import 'package:auth_firebase/presentation/widgets/button.dart';
+import 'package:auth_firebase/presentation/widgets/textfield.dart';
+import 'package:auth_firebase/presentation/widgets/socialButton.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,23 +24,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _auth = AuthService();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
+  bool _isPasswordVisible = false;
 
-  @override
-  void dispose() {
-    _email.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  bool isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
-
-  void showToast(String message) {
+  void _showToast(String message) {
     Fluttertoast.showToast(
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
@@ -45,103 +39,265 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _login() async {
-    final email = _email.text.trim().toLowerCase();
-    final password = _password.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      showToast("Veuillez remplir tous les champs.");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      showToast("Adresse email invalide.");
-      return;
-    }
-
-    try {
-      // Appel à la méthode de connexion
-      final user = await _auth.loginUserWithEmailAndPassword(email, password);
-
-      // Vérification que l'utilisateur n'est pas nul
-      if (user != null) {
-        final role = await _auth.getUserRole(user.uid);
-        log("Connexion réussie - UID: ${user.uid}, Role: $role");
-        showToast("Bienvenue $role !");
-
-        // Redirection conditionnelle selon le rôle de l'utilisateur
-        if (role == "Administrateur") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        } else if (role == "Travailleur") {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const TravailleurScreen()),
-          );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const ClientScreen()),
-          );
-        }
-      } else {
-        log("Erreur : Aucun utilisateur connecté");
-        showToast("Erreur : Aucun utilisateur connecté");
-      }
-    } catch (e) {
-      log("Erreur de connexion : $e");
-      showToast("Erreur de connexion : ${e.toString()}");
-    }
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 25),
-        child: Column(
-          children: [
-            const Spacer(),
-            const Text(
-              "Connexion",
-              style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 50),
-            CustomTextField(
-              label: "Email",
-              hint: "Entrez votre email",
-              controller: _email,
-            ),
-            const SizedBox(height: 20),
-            CustomTextField(
-              label: "Mot de passe",
-              hint: "Entrez votre mot de passe",
-              controller: _password,
-              isPassword: true,
-            ),
-            const SizedBox(height: 30),
-            CustomButton(label: "Se connecter", onPressed: _login),
-            const SizedBox(height: 5),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Pas encore inscrit ? "),
-                InkWell(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SignupScreen()),
+    return BlocProvider(
+      create: (context) => LoginBloc(authService: AuthService()),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF0D47A1),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0D47A1),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 12,
+                    offset: Offset(0, 6),
                   ),
-                  child: const Text(
-                    "Créer un compte",
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ],
+                ],
+              ),
+              child: BlocConsumer<LoginBloc, LoginState>(
+                listener: (context, state) {
+                  if (state is LoginSuccess) {
+                    if (state.type == 'admin') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HomeScreen(),
+                        ),
+                      );
+                    } else if (state.type == 'client') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ClientScreen(),
+                        ),
+                      );
+                    } else if(state.type=='worker') {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TravailleurScreen(),
+                        ),
+                      );
+                    }
+                  } else if (state is LoginFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.error)),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  final isLoading = state is LoginLoading;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 0),
+                            Image.asset(
+                              'assets/images/logo2.png',
+                              height: 100,
+                              width: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'RecklessNeue',
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text("Don't have an account? "),
+                                GestureDetector(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SignupScreen(),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      color: Color(0xFF3B82F6),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      CustomTextField(
+                        label: "Email",
+                        hint: "Enter your email",
+                        controller: _email,
+                        textColor: Colors.black,
+                        hintColor: Colors.grey[600]!,
+                        backgroundColor: Colors.white,
+                        borderColor: Colors.grey[300]!,
+                        borderRadius: 12,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      CustomTextField(
+                        label: "Password",
+                        hint: "Enter your password",
+                        controller: _password,
+                        isPassword: true,
+                        obscureText: !_isPasswordVisible,
+                        textColor: Colors.black,
+                        hintColor: Colors.grey[600]!,
+                        backgroundColor: Colors.white,
+                        borderColor: Colors.grey[300]!,
+                        borderRadius: 12,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 15, vertical: 12),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.grey[600],
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              color: Color(0xFF3B82F6),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton.icon(
+                              icon:
+                                  const Icon(Icons.login, color: Colors.white),
+                              label: const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                              onPressed: () {
+                                final email = _email.text.trim().toLowerCase();
+                                final password = _password.text.trim();
+                                if (email.isEmpty || password.isEmpty) {
+                                  _showToast(
+                                      "Veuillez remplir tous les champs.");
+                                  return;
+                                }
+                                context.read<LoginBloc>().add(
+                                      LoginSubmitted(
+                                        email: email,
+                                        password: password,
+                                      ),
+                                    );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3B82F6),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 0, horizontal: 99),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+
+                      const SizedBox(height: 10),
+                      const Center(
+                        child: Text(
+                          'Or',
+                          style: TextStyle(color: Colors.black54),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SocialButton(
+                        icon: 'assets/images/google.png',
+                        label: 'Continue with Google',
+                        onPressed: () async {
+                          context
+                              .read<LoginBloc>()
+                              .add(GoogleSignInSubmitted());
+                        },
+                        size: 26,
+                        borderColor: Colors.grey[300]!,
+                        borderRadius: 10,
+                        backgroundColor: Colors.white,
+                      ),
+                      // Si besoin, réactive le Facebook login plus tard
+                      /*
+                      const SizedBox(height: 10),
+                      SocialButton(
+                        icon: 'assets/images/facebook.png',
+                        label: 'Continue with Facebook',
+                        onPressed: () async =>
+                            _showToast("Facebook login not implemented"),
+                        size: 26,
+                        borderColor: Colors.grey[300]!,
+                        borderRadius: 10,
+                        backgroundColor: Colors.white,
+                      ),
+                      */
+                    ],
+                  );
+                },
+              ),
             ),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );

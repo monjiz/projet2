@@ -1,10 +1,16 @@
-import 'dart:developer';
+import 'package:auth_firebase/auth/signup/bloc/signup_bloc.dart';
+import 'package:auth_firebase/auth/signup/bloc/signup_event.dart';
+import 'package:auth_firebase/auth/signup/bloc/signup_state.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:auth_firebase/auth/auth_service.dart';
 import 'package:auth_firebase/auth/login_screen.dart';
-import 'package:auth_firebase/widgets/button.dart';
-import 'package:auth_firebase/widgets/textfield.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:auth_firebase/presentation/widgets/button.dart';
+import 'package:auth_firebase/presentation/widgets/socialButton.dart';
+import 'package:auth_firebase/presentation/widgets/textfield.dart';
+
+import 'package:auth_firebase/auth/login/bloc/login_event.dart' as login;
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -14,26 +20,15 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final _auth = AuthService();
-  final _name = TextEditingController();
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final TextEditingController _name = TextEditingController();
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
+  final TextEditingController _confirmPassword = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   String _selectedRole = 'Client';
-
   final List<String> roles = ['Client', 'Travailleur', 'Administrateur'];
-
-  @override
-  void dispose() {
-    _name.dispose();
-    _email.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  bool isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
+  String? _confirmPasswordError;
 
   void showToast(String message) {
     Fluttertoast.showToast(
@@ -46,93 +41,325 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Future<void> _signup() async {
-    final name = _name.text.trim();
-    final email = _email.text.trim().toLowerCase();
-    final password = _password.text.trim();
-
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      showToast("Veuillez remplir tous les champs.");
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      showToast("Adresse email invalide.");
-      return;
-    }
-
-    if (password.length < 6) {
-      showToast("Mot de passe trop faible.");
-      return;
-    }
-
-    try {
-      final user = await _auth.createUserWithEmailPasswordAndRole(
-        name, email, password, _selectedRole,
-      );
-      log("Utilisateur créé avec succès : ${user.uid}");
-      showToast("Inscription réussie !");
-      
-      // Affiche un message de confirmation après l'inscription
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Compte créé'),
-            content: const Text('Votre compte a été créé avec succès !'),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();  // Ferme la boîte de dialogue
-                },
-                child: const Text('OK'),
-              ),
-            ],
-          );
-        },
-      );
-    } catch (e) {
-      showToast("Erreur : ${e.toString()}");
-    }
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _password.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 25),
-        child: Column(
-          children: [
-            const Spacer(),
-            const Text("Inscription", style: TextStyle(fontSize: 40)),
-            const SizedBox(height: 40),
-            CustomTextField(label: "Nom", hint: "Entrez votre nom", controller: _name),
-            const SizedBox(height: 20),
-            CustomTextField(label: "Email", hint: "Entrez votre email", controller: _email),
-            const SizedBox(height: 20),
-            CustomTextField(label: "Mot de passe", hint: "Entrez le mot de passe", controller: _password, isPassword: true),
-            const SizedBox(height: 20),
-            DropdownButtonFormField<String>(
-              value: _selectedRole,
-              items: roles.map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
-              onChanged: (value) => setState(() => _selectedRole = value!),
-              decoration: const InputDecoration(labelText: "Rôle"),
+    return BlocProvider(
+      create: (context) => SignupBloc(authService: AuthService()),
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0D47A1),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0D47A1), Color(0xFF00E5FF)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-            const SizedBox(height: 30),
-            CustomButton(label: "S'inscrire", onPressed: _signup),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text("Déjà un compte ? "),
-                InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                  child: const Text("Connexion", style: TextStyle(color: Colors.red)),
+          ),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                child: Container(
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 12,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: BlocConsumer<SignupBloc, SignupState>(
+                    listener: (context, state) {
+                      if (state is SignupSuccess) {
+                        showToast("Inscription réussie !");
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        );
+                      } else if (state is SignupFailure) {
+                        showToast(state.error);
+                      }
+                    },
+                    builder: (context, state) {
+                      final isLoading = state is SignupLoading;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 0),
+                                const Text(
+                                  'Sign Up',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text("Already have an account? "),
+                                    GestureDetector(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (_) => const LoginScreen()),
+                                      ),
+                                      child: const Text(
+                                        "Sign In",
+                                        style: TextStyle(
+                                          color: Color(0xFF3B82F6),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            label: "Name",
+                            hint: "Enter your name",
+                            controller: _name,
+                            textColor: Colors.black,
+                            hintColor: Colors.grey[600]!,
+                            backgroundColor: Colors.white,
+                            borderColor: Colors.grey[300]!,
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: "Email",
+                            hint: "Enter your email",
+                            controller: _email,
+                            textColor: Colors.black,
+                            hintColor: Colors.grey[600]!,
+                            backgroundColor: Colors.white,
+                            borderColor: Colors.grey[300]!,
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 12),
+                          ),
+                          const SizedBox(height: 8),
+                          CustomTextField(
+                            label: "Password",
+                            hint: "Enter your password",
+                            controller: _password,
+                            isPassword: true,
+                            obscureText: !_isPasswordVisible,
+                            textColor: Colors.black,
+                            hintColor: Colors.grey[600]!,
+                            backgroundColor: Colors.white,
+                            borderColor: Colors.grey[300]!,
+                            borderRadius: 12,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 15, vertical: 12),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _isPasswordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Colors.grey[600],
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isPasswordVisible = !_isPasswordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _confirmPassword,
+                            obscureText: !_isConfirmPasswordVisible,
+                            decoration: InputDecoration(
+                              labelText: "Confirm Password",
+                              hintText: "Confirm your password",
+                              errorText: _confirmPasswordError,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isConfirmPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  color: Colors.grey[600],
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _isConfirmPasswordVisible =
+                                        !_isConfirmPasswordVisible;
+                                  });
+                                },
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: _confirmPasswordError != null
+                                      ? Colors.red
+                                      : Colors.grey[300]!,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            value: _selectedRole,
+                            items: roles
+                                .map((role) => DropdownMenuItem(
+                                      value: role,
+                                      child: Text(
+                                        role,
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ))
+                                .toList(),
+                            onChanged: (value) =>
+                                setState(() => _selectedRole = value!),
+                            decoration: InputDecoration(
+                              labelText: "Role",
+                              labelStyle: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFF3B82F6)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : CustomButton(
+                                  label: "Register",
+                                  onPressed: () {
+                                    final name = _name.text.trim();
+                                    final email =
+                                        _email.text.trim().toLowerCase();
+                                    final password = _password.text.trim();
+                                    final confirmPassword =
+                                        _confirmPassword.text.trim();
+
+                                    setState(() {
+                                      _confirmPasswordError = password != confirmPassword
+                                          ? "Les mots de passe ne correspondent pas"
+                                          : null;
+                                    });
+
+                                    if (name.isEmpty ||
+                                        email.isEmpty ||
+                                        password.isEmpty ||
+                                        confirmPassword.isEmpty) {
+                                      showToast("Veuillez remplir tous les champs");
+                                      return;
+                                    }
+
+                                    if (_confirmPasswordError != null) {
+                                      return;
+                                    }
+
+                                    context.read<SignupBloc>().add(
+                                          SignupSubmitted(
+                                            name: name,
+                                            email: email,
+                                            password: password,
+                                            confirmPassword: confirmPassword,
+                                            role: _selectedRole,
+                                          ),
+                                        );
+                                  },
+                                  textColor: Colors.white,
+                                  backgroundColor: const Color(0xFF3B82F6),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  borderRadius: 12,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 17, horizontal: 113),
+                                ),
+                          const SizedBox(height: 8),
+                          const Center(
+                            child: Text(
+                              'Or',
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SocialButton(
+                            icon: 'assets/images/google.png',
+                            label: 'Continue with Google',
+                            onPressed: () async => context
+                                .read<SignupBloc>()
+                                .add(login.GoogleSignInSubmitted() as SignupEvent),
+                            size: 23,
+                            borderColor: Colors.grey[300]!,
+                            borderRadius: 10,
+                            backgroundColor: Colors.white,
+                          ),
+                         /* const SizedBox(height: 8),
+                          SocialButton(
+                            icon: 'assets/images/facebook.png',
+                            label: 'Continue with Facebook',
+                            onPressed: () async {
+                              showToast("Facebook signup not implemented");
+                            },
+                            size: 26,
+                            borderColor: Colors.grey[300]!,
+                            borderRadius: 10,
+                            backgroundColor: Colors.white,
+                          ),*/
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              ],
+              ),
             ),
-            const Spacer(),
-          ],
+          ),
         ),
       ),
     );
