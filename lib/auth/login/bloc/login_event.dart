@@ -1,4 +1,6 @@
+
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 abstract class LoginEvent extends Equatable {
   const LoginEvent();
@@ -18,10 +20,10 @@ class LoginSubmitted extends LoginEvent {
 }
 
 class GoogleSignInSubmitted extends LoginEvent {
-  final String role; // client ou worker
-  GoogleSignInSubmitted({required this.role});
+  final BuildContext context;
+
+  const GoogleSignInSubmitted({required this.context});
+
+  @override
+  List<Object?> get props => [context];
 }
-
-
-
-class SignupWithGoogle extends LoginEvent {}
