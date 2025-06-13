@@ -1,7 +1,9 @@
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:auth_firebase/auth/auth_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'login_event.dart';
 import 'login_state.dart';
@@ -52,47 +54,50 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
 Future<void> _onGoogleSignInSubmitted(
-    GoogleSignInSubmitted event, 
-    Emitter<LoginState> emit
+  GoogleSignInSubmitted event,
+  Emitter<LoginState> emit
 ) async {
   emit(LoginLoading());
 
   try {
-    final response = await _authService.loginWithGoogle();
+    final response = await _authService.loginWithGoogle(event.role);
 
-    // Vérification plus robuste de la réponse
-    if (response.containsKey('data') && 
+    if (response.containsKey('data') &&
         response['data'] is Map<String, dynamic> &&
-        (response['data']['accessToken'] != null || 
+        (response['data']['accessToken'] != null ||
          (response['data']['user'] != null && response['data']['user']['id'] != null))) {
       
       final userType = response['data']['user']?['type']?.toString().toLowerCase() ?? 'client';
-      log("Connexion Google réussie. Type d'utilisateur: $userType");
-      
+
+      Fluttertoast.showToast(msg: "Bienvenue, $userType !");
       emit(LoginSuccess(type: userType));
     } else {
-      log("Réponse incomplète: ${response.toString()}");
-      emit(LoginFailure(
-          error: "La réponse du serveur est incomplète. Veuillez réessayer."));
+      Fluttertoast.showToast(
+        msg: "Réponse incomplète du serveur.",
+        backgroundColor: Colors.red,
+      );
+      emit(LoginFailure(error: "Réponse incomplète du serveur."));
     }
-  } on Exception catch (e) {
+  } catch (e) {
     String errorMessage;
-    
-    // Gestion plus précise des erreurs
+
     if (e.toString().contains('Connexion Google annulée')) {
-      errorMessage = "Vous avez annulé la connexion avec Google.";
+      errorMessage = "Connexion annulée.";
     } else if (e.toString().contains('Erreur réseau')) {
-      errorMessage = "Problème de connexion internet. Vérifiez votre réseau.";
-    } else if (e.toString().contains('Token') || 
-               e.toString().contains('jeton')) {
-      errorMessage = "Erreur d'authentification. Veuillez réessayer.";
+      errorMessage = "Vérifiez votre connexion Internet.";
+    } else if (e.toString().contains('Token')) {
+      errorMessage = "Erreur d'authentification.";
     } else {
-      errorMessage = "Erreur lors de la connexion avec Google: ${e.toString().replaceAll('Exception: ', '')}";
+      errorMessage = "Erreur: ${e.toString().replaceAll('Exception: ', '')}";
     }
-    
-    log("Erreur Google Sign-In: ${e.toString()}");
+
+    Fluttertoast.showToast(
+      msg: errorMessage,
+      backgroundColor: Colors.red,
+    );
     emit(LoginFailure(error: errorMessage));
   }
 }
+
 
 }

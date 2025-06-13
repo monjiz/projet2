@@ -82,23 +82,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (state.type == 'admin') {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => HomeScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => HomeScreen()),
                       );
                     } else if (state.type == 'client') {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => ClientScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => ClientScreen()),
                       );
-                    } else if(state.type=='worker') {
+                    } else if (state.type == 'worker') {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => TravailleurScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => TravailleurScreen()),
                       );
                     }
                   } else if (state is LoginFailure) {
@@ -256,7 +250,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-
                       const SizedBox(height: 10),
                       const Center(
                         child: Text(
@@ -269,29 +262,55 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: 'assets/images/google.png',
                         label: 'Continue with Google',
                         onPressed: () async {
-                          context
-                              .read<LoginBloc>()
-                              .add(GoogleSignInSubmitted());
+final selectedRole = await showDialog<String>(
+  context: context,
+  builder: (context) => AlertDialog(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    title: const Text(
+      "Select a Role",
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 20,
+      ),
+    ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: Icon(Icons.person, color: Colors.blueAccent),
+          title: const Text("Client"),
+          onTap: () => Navigator.pop(context, 'client'),
+          hoverColor: Colors.blue.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        SizedBox(height: 8),
+        ListTile(
+          leading: Icon(Icons.engineering, color: Colors.orangeAccent),
+          title: const Text("Worker"),
+          onTap: () => Navigator.pop(context, 'worker'),
+          hoverColor: Colors.orange.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ],
+    ),
+  ),
+);
+
+                          if (selectedRole != null) {
+                            context
+                                .read<LoginBloc>()
+                                .add(GoogleSignInSubmitted(role: selectedRole));
+                          }
                         },
                         size: 26,
                         borderColor: Colors.grey[300]!,
                         borderRadius: 10,
                         backgroundColor: Colors.white,
                       ),
-                      // Si besoin, réactive le Facebook login plus tard
-                      /*
-                      const SizedBox(height: 10),
-                      SocialButton(
-                        icon: 'assets/images/facebook.png',
-                        label: 'Continue with Facebook',
-                        onPressed: () async =>
-                            _showToast("Facebook login not implemented"),
-                        size: 26,
-                        borderColor: Colors.grey[300]!,
-                        borderRadius: 10,
-                        backgroundColor: Colors.white,
-                      ),
-                      */
                     ],
                   );
                 },

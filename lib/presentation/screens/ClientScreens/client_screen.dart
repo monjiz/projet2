@@ -1,5 +1,9 @@
 import 'package:auth_firebase/data/services/api_service.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/kpi_dashboard_screen.dart';
+import 'package:auth_firebase/presentation/screens/ClientScreens/project_managment_screen.dart';
+import 'package:auth_firebase/presentation/screens/ClientScreens/worker_List_Screen.dart';
 import 'package:auth_firebase/presentation/screens/messagesScreens/messages_list_page.dart';
+import 'package:auth_firebase/presentation/screens/paimentScreens/manage_payments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -184,18 +188,39 @@ class ClientScreen extends StatelessWidget {
     final actions = [
       _ClientAction("Consulter annonces", FontAwesomeIcons.bullhorn,
           () => _showAction(context, "Annonces consultées")),
-      _ClientAction("Envoyer message", FontAwesomeIcons.paperPlane,
-          () => _showAction(context, "Message envoyé")),
-      _ClientAction("Gérer projet", FontAwesomeIcons.projectDiagram,
-          () => _showAction(context, "Projet géré")),
-      _ClientAction("Voir travailleurs", FontAwesomeIcons.users,
-          () => _showAction(context, "Travailleurs affichés")),
+            _ClientAction(
+
+      "Envoyer Message",
+      FontAwesomeIcons.paperPlane,
+      () => 
+                 Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => MessagesListPage(
+                        apiService: ApiService(), userType: ''))) 
+        ),
+      
+      _ClientAction(
+        "Gérer projet",
+        FontAwesomeIcons.projectDiagram,
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProjectManagementScreen()),
+        ),
+      ),
+      _ClientAction(
+        "Voir travailleurs",
+        FontAwesomeIcons.users,
+        () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const WorkersListScreen()),
+        ),
+      ),
       _ClientAction("Créer tâche", FontAwesomeIcons.tasks,
           () => _showAction(context, "Tâche créée")),
       _ClientAction("Voir recommandations", FontAwesomeIcons.lightbulb,
           () => _showAction(context, "Recommandations affichées")),
     ];
-
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -655,6 +680,18 @@ class ClientScreen extends StatelessWidget {
               );
             },
           ),
+          _buildDrawerItem(
+  iconId: FontAwesomeIcons.gaugeHigh,
+  textLabel: 'Dashboard Client',
+  onTapCallback: () {
+    Navigator.pop(context); // Ferme le drawer
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const KPIDashboardScreen()), // Navigation
+    );
+  },
+),
+
           _buildDrawerItem(
             iconId: FontAwesomeIcons.user,
             textLabel: 'Mon Profil',

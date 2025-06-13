@@ -40,8 +40,8 @@ class ManageUsersScreen extends StatelessWidget {
                 final user = state.users[index];
                 return ListTile(
                   leading: const Icon(Icons.person),
-                  title: Text(user.name),
-                  subtitle: Text('${user.email}\nRôle : ${user.role}'),
+                  title: Text(user.fullName), // adapte ici au champ correct
+                  subtitle: Text('${user.email}\nRôle : ${user.type}'), // idem ici
                   isThreeLine: true,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -50,10 +50,10 @@ class ManageUsersScreen extends StatelessWidget {
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () => _showEditRoleDialog(context, user),
                       ),
-                      IconButton(
+                   /*   IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () => _showDeleteConfirmation(context, user),
-                      ),
+                      ),*/
                     ],
                   ),
                 );
@@ -69,8 +69,8 @@ class ManageUsersScreen extends StatelessWidget {
   }
 
   void _showEditRoleDialog(BuildContext context, UserModel user) {
-    final roles = ['Client', 'Travailleur', 'Administrateur'];
-    String selectedRole = user.role;
+    final roles = ['client', 'travailleur', 'administrateur']; // mettre en minuscules si c'est le format backend
+    String selectedRole = user.type.toLowerCase();
 
     showDialog(
       context: context,
@@ -81,7 +81,7 @@ class ManageUsersScreen extends StatelessWidget {
             value: selectedRole,
             items: roles.map((role) => DropdownMenuItem<String>(
               value: role,
-              child: Text(role),
+              child: Text(role[0].toUpperCase() + role.substring(1)), // Capitaliser la première lettre
             )).toList(),
             onChanged: (value) {
               if (value != null) {
@@ -101,7 +101,7 @@ class ManageUsersScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              if (selectedRole != user.role) {
+              if (selectedRole != user.type.toLowerCase()) {
                 context.read<UserBloc>().add(UpdateUserRoleEvent(user.id, selectedRole));
               }
               Navigator.pop(context);
@@ -113,12 +113,12 @@ class ManageUsersScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, UserModel user) {
+ /* void _showDeleteConfirmation(BuildContext context, UserModel user) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Confirmer la suppression'),
-        content: Text('Supprimer ${user.name} ?'),
+        content: Text('Supprimer ${user.fullName} ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -134,5 +134,5 @@ class ManageUsersScreen extends StatelessWidget {
         ],
       ),
     );
-  }
+  }*/
 }

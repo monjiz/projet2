@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:auth_firebase/widgets/button.dart';
 
 class ClientSettingsScreen extends StatelessWidget {
   const ClientSettingsScreen({super.key});
@@ -8,60 +7,184 @@ class ClientSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Paramètres"),
-        backgroundColor: Colors.deepPurple,
-        elevation: 0,
+        title: const Text("Paramètres", 
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        elevation: 0.5,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, 
+            size: 20, 
+            color: Colors.black,
+          ),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Préférences",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            _buildSectionHeader("Préférences"),
+            _buildSettingItem(
+              icon: Icons.notifications_outlined,
+              title: "Notifications",
+              subtitle: "Gérer vos notifications",
+              onTap: () {},
             ),
-            const SizedBox(height: 20),
-            SwitchListTile(
-              title: const Text("Notifications"),
-              subtitle: const Text("Activer les notifications push"),
-              value: true,
-              onChanged: (value) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(value ? "Notifications activées" : "Notifications désactivées")),
-                );
-              },
-              activeColor: Colors.deepPurple,
+            _buildSettingItem(
+              icon: Icons.language_outlined,
+              title: "Langue",
+              subtitle: "Français",
+              onTap: () {},
             ),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text("Langue"),
-              subtitle: const Text("Français"),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Changement de langue non implémenté")),
-                );
-              },
+            _buildSettingItem(
+              icon: Icons.dark_mode_outlined,
+              title: "Apparence",
+              subtitle: "Mode clair",
+              trailing: Switch(
+                value: false,
+                onChanged: (value) {},
+                activeColor: Colors.blue,
+              ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Compte",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            
+            _buildSectionHeader("Confidentialité"),
+            _buildSettingItem(
+              icon: Icons.lock_outline,
+              title: "Confidentialité",
+              subtitle: "Qui peut voir vos informations",
+              onTap: () {},
             ),
-            const SizedBox(height: 10),
-            ListTile(
-              title: const Text("Supprimer le compte", style: TextStyle(color: Colors.red)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Suppression de compte non implémentée")),
-                );
-              },
+            _buildSettingItem(
+              icon: Icons.security_outlined,
+              title: "Sécurité",
+              subtitle: "Options de sécurité du compte",
+              onTap: () {},
             ),
+            
+            _buildSectionHeader("Compte"),
+            _buildSettingItem(
+              icon: Icons.help_outline,
+              title: "Aide et support",
+              subtitle: "Centre d'aide et support client",
+              onTap: () {},
+            ),
+            _buildSettingItem(
+              icon: Icons.info_outline,
+              title: "À propos",
+              subtitle: "Version 1.0.0",
+              onTap: () {},
+            ),
+            
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                ),
+                child: _buildSettingItem(
+                  icon: Icons.logout,
+                  title: "Déconnexion",
+                  subtitle: "Se déconnecter de votre compte",
+                  onTap: () {},
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  _showDeleteAccountDialog(context);
+                },
+                child: const Text(
+                  "Supprimer le compte",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Supprimer le compte"),
+        content: const Text("Êtes-vous sûr de vouloir supprimer définitivement votre compte ? Cette action est irréversible."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Annuler", style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Suppression de compte en cours...")),
+              );
+            },
+            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 24.0, 16.0, 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.grey,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black87, size: 22),
+      title: Text(title, 
+        style: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 16,
+        ),
+      ),
+      subtitle: Text(subtitle, 
+        style: const TextStyle(
+          color: Colors.grey,
+          fontSize: 14,
+        ),
+      ),
+      trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      minVerticalPadding: 0,
+      dense: true,
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:auth_firebase/presentation/screens/ClientScreens/client_settings_screen.dart';
 import 'package:flutter/material.dart';
 
 class ClientProfileScreen extends StatelessWidget {
@@ -28,7 +29,17 @@ class ClientProfileScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.black),
-            onPressed: () {},
+            onPressed: () {
+
+  //  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) =>  ClientSettingsScreen()),
+                  );
+
+
+            },
             tooltip: 'Settings',
           ),
         ],

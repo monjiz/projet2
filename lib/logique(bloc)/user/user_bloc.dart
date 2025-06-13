@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'user_event.dart';
 import 'user_state.dart';
 
-
 class UserBloc extends Bloc<UserEvent, UserState> {
   final UserRepository repository;
 
@@ -19,18 +18,30 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     });
 
     on<AddUserEvent>((event, emit) async {
-      await repository.addUser(event.user);
-      add(LoadUsers());
+      try {
+        await repository.addUser(event.user);
+        add(LoadUsers());
+      } catch (e) {
+        emit(UserError(e.toString()));
+      }
     });
 
     on<DeleteUserEvent>((event, emit) async {
-      await repository.deleteUser(event.id);
-      add(LoadUsers());
+      try {
+        await repository.deleteUser(event.id);
+        add(LoadUsers());
+      } catch (e) {
+        emit(UserError(e.toString()));
+      }
     });
 
     on<UpdateUserRoleEvent>((event, emit) async {
-      await repository.updateUserRole(event.id, event.role);
-      add(LoadUsers());
+      try {
+        await repository.updateUserRole(event.id, event.role);
+        add(LoadUsers());
+      } catch (e) {
+        emit(UserError(e.toString()));
+      }
     });
   }
 }

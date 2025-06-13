@@ -27,7 +27,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   String _selectedRole = 'Client';
-  final List<String> roles = ['Client', 'Travailleur', 'Administrateur'];
+  final List<String> roles = ['Client', 'Worker'];
   String? _confirmPasswordError;
 
   void showToast(String message) {

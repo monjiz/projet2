@@ -17,8 +17,11 @@ class LoginSubmitted extends LoginEvent {
   List<Object?> get props => [email, password];
 }
 
-class GoogleSignInSubmitted extends LoginEvent {}
+class GoogleSignInSubmitted extends LoginEvent {
+  final String role; // client ou worker
+  GoogleSignInSubmitted({required this.role});
+}
 
 
-// login_event.dart
+
 class SignupWithGoogle extends LoginEvent {}

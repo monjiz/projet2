@@ -25,10 +25,10 @@ class _AddUserScreenState extends State<AddUserScreen> {
   }
 
   void _submit() {
-    final name = _nameController.text.trim();
+    final fullName = _nameController.text.trim();
     final email = _emailController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || _selectedRole == null) {
+    if (fullName.isEmpty || email.isEmpty || _selectedRole == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Veuillez remplir tous les champs.")),
       );
@@ -37,7 +37,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
 
     Navigator.pop(
       context,
-      UserModel(name: name, email: email, role: _selectedRole!, id: ''),
+      UserModel(fullName: fullName, email: email, type: _selectedRole!, id: ''),
     );
   }
 

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -176,7 +178,7 @@ class AuthService {
 
 
 
-  
+ /* 
 Future<Map<String, dynamic>> loginWithGoogle() async {
   // Initialisation de GoogleSignIn avec forceAccountChooser
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -255,7 +257,88 @@ Future<Map<String, dynamic>> loginWithGoogle() async {
     // Optionnel: Déconnexion de GoogleSignIn pour forcer le choix à la prochaine connexion
     await _googleSignIn.signOut();
   }
+}*/
+
+
+Future<Map<String, dynamic>> loginWithGoogle(String role) async {
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+
+  try {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) {
+      Fluttertoast.showToast(msg: 'Connexion Google annulée');
+      throw Exception('Connexion Google annulée');
+    }
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    if (googleAuth.idToken == null) {
+      Fluttertoast.showToast(msg: 'Token Google ID non disponible');
+      throw Exception('Token Google ID non disponible');
+    }
+
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+      accessToken: googleAuth.accessToken,
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+    final idToken = await userCredential.user?.getIdToken();
+    if (idToken == null) {
+      Fluttertoast.showToast(msg: 'Token Firebase invalide');
+      throw Exception('Token Firebase invalide');
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/auth/google'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode({
+        'token': idToken,
+        'type': role,
+      }),
+    );
+
+    log('Status: ${response.statusCode}');
+    log('Body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final authData = data['data'] as Map<String, dynamic>? ?? {};
+      final prefs = await SharedPreferences.getInstance();
+
+      if (authData['accessToken'] != null) {
+        await prefs.setString('auth_token', authData['accessToken']);
+      }
+      if (authData['user']?['id'] != null) {
+        await prefs.setString('user_id', authData['user']['id']);
+      }
+
+      Fluttertoast.showToast(msg: 'Connexion Google réussie');
+      return data;
+    } else {
+      final error = jsonDecode(response.body);
+      Fluttertoast.showToast(
+        msg: error['error'] ?? error['message'] ?? 'Erreur inconnue',
+        backgroundColor: Colors.red,
+      );
+      throw Exception(error['error'] ?? error['message'] ?? 'Erreur inconnue');
+    }
+  } on SocketException {
+    Fluttertoast.showToast(msg: 'Erreur réseau. Vérifiez votre connexion Internet.');
+    throw Exception('Erreur réseau. Vérifiez votre connexion Internet.');
+  } on FormatException {
+    Fluttertoast.showToast(msg: 'Réponse serveur invalide.');
+    throw Exception('Réponse serveur invalide.');
+  } catch (e) {
+    Fluttertoast.showToast(msg: 'Erreur: ${e.toString()}', backgroundColor: Colors.red);
+    throw Exception('Erreur: ${e.toString()}');
+  } finally {
+    await _googleSignIn.signOut();
+  }
 }
+
 
   // =================== FORGOT PASSWORD ===================
   Future<void> sendPasswordResetEmail(String email) async {

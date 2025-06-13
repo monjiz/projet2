@@ -1,30 +1,30 @@
 class UserModel {
   final String id;
-  final String name;
+  final String fullName;
   final String email;
-  final String role;
+  final String type;
 
   UserModel({
     required this.id,
-    required this.name,
+    required this.fullName,
     required this.email,
-    required this.role,
+    required this.type,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['_id'], // ou 'id' selon ton backend
-      name: json['name'],
-      email: json['email'],
-      role: json['role'],
+      id: json['id']?.toString() ?? '',               // corrigé ici
+      fullName: json['fullName'] ?? 'Nom inconnu',
+      email: json['email'] ?? 'Email inconnu',
+      type: json['type'] ?? 'Client',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
+      'fullName': fullName,
       'email': email,
-      'role': role,
+      'type': type,
     };
   }
 }
