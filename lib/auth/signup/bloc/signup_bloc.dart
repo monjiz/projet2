@@ -132,7 +132,7 @@ class SignupBloc extends Bloc<SignupEvent, SignupState> {
     emit(SignupFailure(error: errorMessage));
   }
 }
-
+*/
   @override
   Future<void> close() async {
     try {
@@ -141,5 +141,5 @@ class SignupBloc extends Bloc<SignupEvent, SignupState> {
       // Ignorer les erreurs de déconnexion
     }
     return super.close();
-  }*/
+  }
 }

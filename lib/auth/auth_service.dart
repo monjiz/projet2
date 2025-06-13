@@ -1,7 +1,7 @@
-
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -13,11 +13,6 @@ class AuthService {
   final String baseUrl = 'https://api.platform.dat.tn/api/v1';
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static final RegExp _emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
-  }
 
   // =================== REGISTER ===================
   Future<Map<String, dynamic>> registerUser({
@@ -80,33 +75,25 @@ class AuthService {
       log('Register response body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final authData = data['data'] as Map<String, dynamic>? ?? {};
+        final data = jsonDecode(response.body);
+        final authData = data['data'] ?? {};
         final prefs = await SharedPreferences.getInstance();
         if (authData['accessToken'] != null) {
           await prefs.setString('auth_token', authData['accessToken']);
-          log('Token sauvegardé : ${authData['accessToken']}');
         }
         if (authData['user']?['id'] != null) {
           await prefs.setString('user_id', authData['user']['id']);
-          log('User ID sauvegardé : ${authData['user']['id']}');
         }
         return data;
       } else {
-        final error = jsonDecode(response.body) as Map<String, dynamic>;
+        final error = jsonDecode(response.body);
         final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
-        log('Erreur d\'inscription : $errorMessage');
         throw Exception(errorMessage);
       }
     } on SocketException {
-      log('Erreur réseau dans registerUser');
       throw Exception('Erreur réseau. Vérifiez votre connexion Internet.');
-    } on FormatException {
-      log('Format JSON invalide dans registerUser');
-      throw Exception('Réponse du serveur invalide.');
     } catch (e) {
-      log('Erreur inattendue dans registerUser($type) : $e');
-      throw Exception('Erreur de connexion au serveur. Vérifiez votre connexion Internet.');
+      throw Exception('Erreur lors de l’inscription : $e');
     }
   }
 
@@ -129,46 +116,31 @@ class AuthService {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       log('Login response status code: ${response.statusCode}');
       log('Login response body: ${response.body}');
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-
+      final data = jsonDecode(response.body);
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final prefs = await SharedPreferences.getInstance();
-        final authData = data['data'] as Map<String, dynamic>? ?? {};
-        final token = authData['accessToken'];
-        final uid = authData['user']?['id'];
-
-        if (token != null) {
-          await prefs.setString('auth_token', token);
-          log('Token sauvegardé : $token');
+        final authData = data['data'] ?? {};
+        if (authData['accessToken'] != null) {
+          await prefs.setString('auth_token', authData['accessToken']);
         }
-        if (uid != null) {
-          await prefs.setString('user_id', uid);
-          log('User ID sauvegardé : $uid');
+        if (authData['user']?['id'] != null) {
+          await prefs.setString('user_id', authData['user']['id']);
         }
         return data;
       } else {
         final errorMessage = data['error'] ?? data['message'] ?? 'Email ou mot de passe incorrect.';
-        log('Erreur de connexion : $errorMessage');
         throw Exception(errorMessage);
       }
     } on SocketException {
-      log('Erreur réseau lors de la connexion');
       throw Exception('Erreur réseau. Vérifiez votre connexion Internet.');
-    } on FormatException {
-      log('Format JSON invalide lors de la connexion');
-      throw Exception('Données renvoyées par le serveur invalides.');
     } catch (e) {
-      log('Erreur inattendue dans login : $e');
-      throw Exception('Erreur de connexion au serveur. Vérifiez votre connexion Internet.');
+      throw Exception('Erreur de connexion : $e');
     }
   }
 
@@ -179,89 +151,54 @@ class AuthService {
     String? roleIfNew,
     String? name,
   }) async {
-    final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
-
     try {
-      // Tentative de connexion ou inscription avec le rôle fourni
-      return await _loginWithToken(
-        token: idToken,
-        role: roleIfNew,
-        email: email,
-        name: name,
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/google'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'token': idToken,
+          if (roleIfNew != null) 'type': roleIfNew,
+          'email': email,
+          if (name != null) 'name': name,
+        }),
       );
+
+      log('Google login response status code: ${response.statusCode}');
+      log('Google login response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final authData = data['data'] ?? {};
+        final prefs = await SharedPreferences.getInstance();
+
+        if (authData['accessToken'] != null) {
+          await prefs.setString('auth_token', authData['accessToken']);
+        }
+        if (authData['user']?['id'] != null) {
+          await prefs.setString('user_id', authData['user']['id']);
+        }
+
+        return data;
+      } else {
+        final error = jsonDecode(response.body);
+        final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
+        throw Exception(errorMessage);
+      }
     } on SocketException {
-      Fluttertoast.showToast(
-        msg: 'Erreur réseau. Vérifiez votre connexion Internet.',
-        backgroundColor: Colors.red,
-      );
       throw Exception('Erreur réseau. Vérifiez votre connexion Internet.');
     } catch (e) {
-      Fluttertoast.showToast(
-        msg: e.toString().replaceAll('Exception: ', ''),
-        backgroundColor: Colors.red,
-      );
       throw Exception(e.toString());
-    } finally {
-      await _googleSignIn.signOut();
-    }
-  }
-
-  Future<Map<String, dynamic>> _loginWithToken({
-    required String token,
-    String? role,
-    String? email,
-    String? name,
-  }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/google'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({
-        'token': token,
-        if (role != null) 'type': role,
-        if (email != null) 'email': email,
-        if (name != null) 'name': name,
-      }),
-    );
-
-    log('Google login response status code: ${response.statusCode}');
-    log('Google login response body: ${response.body}');
-
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      final authData = data['data'] ?? {};
-      final prefs = await SharedPreferences.getInstance();
-
-      if (authData['accessToken'] != null) {
-        await prefs.setString('auth_token', authData['accessToken']);
-        log('Token sauvegardé : ${authData['accessToken']}');
-      }
-      if (authData['user']?['id'] != null) {
-        await prefs.setString('user_id', authData['user']['id']);
-        log('User ID sauvegardé : ${authData['user']['id']}');
-      }
-
-      Fluttertoast.showToast(msg: 'Connexion Google réussie');
-      return data;
-    } else {
-      final error = jsonDecode(response.body);
-      final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
-      log('Erreur Google login : $errorMessage');
-      throw Exception(errorMessage);
     }
   }
 
   // =================== FORGOT PASSWORD ===================
   Future<void> sendPasswordResetEmail(String email) async {
-    if (email.trim().isEmpty) {
-      throw Exception('Email requis.');
-    }
+    if (email.trim().isEmpty) throw Exception('Email requis.');
 
-    if (!_emailRegex.hasMatch(email)) {
-      throw Exception('Adresse email invalide.');
-    }
+    if (!_emailRegex.hasMatch(email)) throw Exception('Adresse email invalide.');
 
     final url = Uri.parse('$baseUrl/auth/forget-password');
 
@@ -272,19 +209,12 @@ class AuthService {
         body: jsonEncode({'email': email}),
       );
 
-      log('Response status: ${response.statusCode}, body: ${response.body}');
       if (response.statusCode != 201) {
         final error = jsonDecode(response.body);
-        throw Exception(error['message'] ?? 'Échec de l\'envoi de l\'email de réinitialisation.');
+        throw Exception(error['message'] ?? 'Échec de l\'envoi de l\'email.');
       }
-    } on SocketException {
-      log('Erreur réseau pendant sendPasswordResetEmail');
-      throw Exception('Erreur de réseau. Veuillez vérifier votre connexion internet.');
-    } on FormatException {
-      throw Exception('Réponse invalide du serveur.');
     } catch (e) {
-      log('Erreur inattendue dans sendPasswordResetEmail: $e');
-      throw Exception('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
+      throw Exception('Erreur de réinitialisation : $e');
     }
   }
 
@@ -314,30 +244,31 @@ class AuthService {
         final error = jsonDecode(response.body);
         throw Exception(error['message'] ?? 'Échec de la mise à jour du mot de passe.');
       }
-    } on SocketException {
-      log('Erreur réseau pendant setNewPassword');
-      throw Exception('Erreur de réseau. Veuillez vérifier votre connexion internet.');
-    } on FormatException {
-      throw Exception('Réponse invalide du serveur.');
     } catch (e) {
-      log('Erreur inattendue dans setNewPassword: $e');
-      throw Exception('Erreur de connexion au serveur. Vérifiez votre connexion internet.');
+      throw Exception('Erreur lors du changement de mot de passe : $e');
     }
   }
 
   // =================== SIGN OUT ===================
   Future<void> signOut() async {
-    try {
+   
+      await _auth.signOut();
+
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+        await googleSignIn.disconnect();
+      }
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('auth_token');
       await prefs.remove('user_id');
       await prefs.remove('refresh_token');
-      await _auth.signOut();
-    } catch (e) {
-      log('Erreur dans signOut: $e');
-      throw Exception('Erreur lors de la déconnexion.');
-    }
-  }
+
+      log('Déconnexion réussie');
+    } 
+    
+  
 
   // =================== CREATE USER WRAPPER ===================
   Future<Map<String, dynamic>> createUserWithEmailPasswordAndRole({

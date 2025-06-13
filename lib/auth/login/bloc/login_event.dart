@@ -27,3 +27,6 @@ class GoogleSignInSubmitted extends LoginEvent {
   @override
   List<Object?> get props => [context];
 }
+
+class CheckCurrentUser extends LoginEvent {}
+class SignOutRequested extends LoginEvent {}

@@ -1,3 +1,5 @@
+import 'package:auth_firebase/auth/login/bloc/login_bloc.dart';
+import 'package:auth_firebase/auth/login/bloc/login_event.dart';
 import 'package:auth_firebase/data/services/api_service.dart';
 import 'package:auth_firebase/presentation/screens/AdminScreens/kpi_dashboard_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/project_managment_screen.dart';
@@ -6,6 +8,7 @@ import 'package:auth_firebase/presentation/screens/messagesScreens/messages_list
 import 'package:auth_firebase/presentation/screens/paimentScreens/manage_payments_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -188,18 +191,14 @@ class ClientScreen extends StatelessWidget {
     final actions = [
       _ClientAction("Consulter annonces", FontAwesomeIcons.bullhorn,
           () => _showAction(context, "Annonces consultées")),
-            _ClientAction(
-
-      "Envoyer Message",
-      FontAwesomeIcons.paperPlane,
-      () => 
-                 Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => MessagesListPage(
-                        apiService: ApiService(), userType: ''))) 
-        ),
-      
+      _ClientAction(
+          "Envoyer Message",
+          FontAwesomeIcons.paperPlane,
+          () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => MessagesListPage(
+                      apiService: ApiService(), userType: '')))),
       _ClientAction(
         "Gérer projet",
         FontAwesomeIcons.projectDiagram,
@@ -681,16 +680,17 @@ class ClientScreen extends StatelessWidget {
             },
           ),
           _buildDrawerItem(
-  iconId: FontAwesomeIcons.gaugeHigh,
-  textLabel: 'Dashboard Client',
-  onTapCallback: () {
-    Navigator.pop(context); // Ferme le drawer
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const KPIDashboardScreen()), // Navigation
-    );
-  },
-),
+            iconId: FontAwesomeIcons.gaugeHigh,
+            textLabel: 'Dashboard Client',
+            onTapCallback: () {
+              Navigator.pop(context); // Ferme le drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const KPIDashboardScreen()), // Navigation
+              );
+            },
+          ),
 
           _buildDrawerItem(
             iconId: FontAwesomeIcons.user,
@@ -731,6 +731,7 @@ class ClientScreen extends StatelessWidget {
               _showAction(context, "Aide et Support (not implemented)");
             },
           ),
+          // Dans la méthode _buildDrawer :
           const Divider(),
           _buildDrawerItem(
             iconId: FontAwesomeIcons.arrowRightFromBracket,
@@ -738,19 +739,51 @@ class ClientScreen extends StatelessWidget {
             textColor: Colors.red,
             iconColor: Colors.red,
             onTapCallback: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Ferme le drawer
+
+              // Afficher un indicateur de chargement
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
               try {
+                // Annuler tous les toasts en attente
+                await Fluttertoast.cancel();
+
+                // Déconnexion technique
                 await auth.signOut();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              } catch (eSignOut) {
-                _showAction(
-                    context, "Erreur lors de la déconnexion : $eSignOut");
+
+                // Fermer le dialog d'indicateur de chargement
+                if (context.mounted) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                }
+
+                // Déclenche la déconnexion via LoginBloc
+                context.read<LoginBloc>().add(SignOutRequested());
+
+                // Navigation vers l'écran de login avec suppression de l'historique
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                // Fermer le dialog en cas d'erreur
+                if (context.mounted) {
+                  Navigator.of(context, rootNavigator: true).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur de déconnexion: $e')),
+                  );
+                }
               }
             },
           ),
+
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

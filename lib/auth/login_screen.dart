@@ -4,6 +4,7 @@ import 'package:auth_firebase/auth/login/bloc/login_state.dart';
 import 'package:auth_firebase/presentation/screens/AdminScreens/admin_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/client_screen.dart';
 import 'package:auth_firebase/presentation/screens/WorkerScreens/travailleur_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -37,6 +38,15 @@ class _LoginScreenState extends State<LoginScreen> {
       textColor: Colors.white,
       fontSize: 16.0,
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Vérifier si un utilisateur est déjà connecté
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LoginBloc>().add(CheckCurrentUser());
+    });
   }
 
   @override
@@ -78,23 +88,27 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               child: BlocConsumer<LoginBloc, LoginState>(
                 listener: (context, state) {
-                  if (state is LoginSuccess) {
+                  if (state is LoginSuccess && context.mounted) {
+                    Widget targetScreen;
                     if (state.type == 'admin') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => HomeScreen()),
-                      );
+                      targetScreen = const HomeScreen();
                     } else if (state.type == 'client') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => ClientScreen()),
-                      );
+                      targetScreen = const ClientScreen();
                     } else if (state.type == 'worker') {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => TravailleurScreen()),
+                      targetScreen = const TravailleurScreen();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Type d\'utilisateur inconnu')),
                       );
+                      return;
                     }
+                    
+                    // Navigation avec suppression de l'historique
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => targetScreen),
+                      (route) => false,
+                    );
                   } else if (state is LoginFailure) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(state.error)),
@@ -263,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: 'Continue with Google',
                         onPressed: () async => context.read<LoginBloc>().add(
                                 GoogleSignInSubmitted(
-                                    context: context), // Pas de const ici !
+                                    context: context),
                               ),
                         size: 26,
                         borderColor: Colors.grey[300]!,
