@@ -36,6 +36,7 @@ import 'package:auth_firebase/presentation/screens/WelcomeScreens/welcome.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/client_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/client_profil_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/ClientEditProfileScreen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,6 +85,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
+
+
+      theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(
+          Theme.of(context).textTheme,
+        ),
+        primarySwatch: Colors.blue,
+      ),
+
       routes: {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const Welcome(),

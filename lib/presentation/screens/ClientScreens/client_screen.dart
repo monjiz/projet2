@@ -732,57 +732,229 @@ class ClientScreen extends StatelessWidget {
             },
           ),
           // Dans la méthode _buildDrawer :
-          const Divider(),
-          _buildDrawerItem(
-            iconId: FontAwesomeIcons.arrowRightFromBracket,
-            textLabel: 'Déconnexion',
-            textColor: Colors.red,
-            iconColor: Colors.red,
-            onTapCallback: () async {
-              Navigator.pop(context); // Ferme le drawer
+const Divider(),
+_buildDrawerItem(
+  iconId: FontAwesomeIcons.arrowRightFromBracket,
+  textLabel: 'Log Out',
+  textColor: Colors.red,
+  iconColor: Colors.red,
+  onTapCallback: () async {
+    Navigator.pop(context); // Close drawer
 
-              // Afficher un indicateur de chargement
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) =>
-                    const Center(child: CircularProgressIndicator()),
-              );
-
-              try {
-                // Annuler tous les toasts en attente
-                await Fluttertoast.cancel();
-
-                // Déconnexion technique
-                await auth.signOut();
-
-                // Fermer le dialog d'indicateur de chargement
-                if (context.mounted) {
-                  Navigator.of(context, rootNavigator: true).pop();
-                }
-
-                // Déclenche la déconnexion via LoginBloc
-                context.read<LoginBloc>().add(SignOutRequested());
-
-                // Navigation vers l'écran de login avec suppression de l'historique
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                }
-              } catch (e) {
-                // Fermer le dialog en cas d'erreur
-                if (context.mounted) {
-                  Navigator.of(context, rootNavigator: true).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erreur de déconnexion: $e')),
-                  );
-                }
-              }
-            },
+    // 👉 Modern confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24.0),
           ),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with icon
+                Container(
+                  padding: const EdgeInsets.only(top: 28, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).dialogBackgroundColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24.0),
+                      topRight: Radius.circular(24.0),
+                    )
+                  ),
+                  child: const Icon(
+                    Icons.logout_rounded,
+                    size: 48,
+                    color: Colors.redAccent,
+                  ),
+                ),
+                
+                // Title
+                Padding(
+                  padding: const EdgeInsets.only(top: 16, left: 24, right: 24),
+                  child: Text(
+                    'Log Out?',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 22,
+                    ),
+                  ),
+                ),
+                
+                // Description
+                Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 28, left: 24, right: 24),
+                  child: Text(
+                    'Are you sure you want to log out? You\'ll need to sign in again to access your account.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).hintColor,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                
+                // Buttons
+                Row(
+                  children: [
+                    // Cancel button
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(24.0)),
+                          )
+                        ),
+                        child: Text(
+                          'CANCEL',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    // Logout button
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomRight: Radius.circular(24.0)),
+                          )
+                        ),
+                        child: Text(
+                          'LOG OUT',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    // Show professional loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.4),
+      builder: (context) => Center(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                spreadRadius: 2,
+              )
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator.adaptive(
+                valueColor: AlwaysStoppedAnimation<Color>(Color.fromARGB(255, 82, 97, 255)),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Signing out...',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await Fluttertoast.cancel();
+      
+      // Call BLoC
+      context.read<LoginBloc>().add(SignOutRequested());
+
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close loader
+
+        // ✅ Animated transition to login
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutQuad,
+                  )),
+                  child: child,
+                ),
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close loader
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: ${e.toString()}'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            backgroundColor: const Color.fromARGB(255, 44, 76, 193),
+          ),
+        );
+      }
+    }
+  },
+),
 
           Padding(
             padding:

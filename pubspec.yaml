@@ -26,7 +26,7 @@ dependencies:
   font_awesome_flutter: ^10.8.0
   google_sign_in: ^6.2.1
   http: ^1.2.1
-  shared_preferences: ^2.2.2  # Pour stocker le token localement
+  shared_preferences: ^2.2.2
   provider: ^6.1.2
 
 dev_dependencies:
@@ -34,6 +34,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1  # 👈 déplacé ici
+
+flutter_launcher_icons:  # 👈 une seule fois, ici
+  image_path: "assets/images/logo.png"
+  android: true
+  ios: true
 
 flutter:
   uses-material-design: true
@@ -49,9 +55,3 @@ flutter:
     - assets/images/image3.png
     - assets/images/image4.png
     - assets/images/image2.png
-
-#  fonts:
- #   - family: RecklessNeue
-  #    fonts:
-  #      - asset: assets/fonts/font/RecklessNeue-Bold.ttf
-  #        weight: 700

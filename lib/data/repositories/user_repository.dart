@@ -8,7 +8,7 @@ class UserRepository {
   Future<List<UserModel>> fetchUsers() async {
     final response = await http.get(Uri.parse('$baseUrl/users'));
 
-    print('Response body: ${response.body}');  // Debug
+    print('Response body: ${response.body}'); // Debug
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> jsonData = json.decode(response.body);
@@ -25,20 +25,27 @@ class UserRepository {
     }
   }
 
-  Future<void> addUser(UserModel user) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/users'),  // Ajout "users" ici aussi !
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(user.toJson()),
-    );
+Future<void> addUser( user, String token) async {
+  final url = Uri.parse('https://api.platform.dat.tn/api/v1/users/user');
 
-    if (response.statusCode != 201) {
-      throw Exception('Erreur lors de l\'ajout de l\'utilisateur');
-    }
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    },
+    body: jsonEncode(user.toJson()),
+  );
+
+  if (response.statusCode != 200 && response.statusCode != 201) {
+    throw Exception('Erreur lors de l’ajout utilisateur : ${response.body}');
   }
+}
+
 
   Future<void> deleteUser(String id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/users/$id')); // /users/id
+    final response =
+        await http.delete(Uri.parse('$baseUrl/users/$id')); // /users/id
     if (response.statusCode != 200) {
       throw Exception('Erreur lors de la suppression');
     }

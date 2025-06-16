@@ -3,8 +3,8 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+
+
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -87,7 +87,8 @@ class AuthService {
         return data;
       } else {
         final error = jsonDecode(response.body);
-        final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
+        final errorMessage =
+            error['error'] ?? error['message'] ?? 'Erreur inconnue';
         throw Exception(errorMessage);
       }
     } on SocketException {
@@ -134,7 +135,9 @@ class AuthService {
         }
         return data;
       } else {
-        final errorMessage = data['error'] ?? data['message'] ?? 'Email ou mot de passe incorrect.';
+        final errorMessage = data['error'] ??
+            data['message'] ??
+            'Email ou mot de passe incorrect.';
         throw Exception(errorMessage);
       }
     } on SocketException {
@@ -184,7 +187,8 @@ class AuthService {
         return data;
       } else {
         final error = jsonDecode(response.body);
-        final errorMessage = error['error'] ?? error['message'] ?? 'Erreur inconnue';
+        final errorMessage =
+            error['error'] ?? error['message'] ?? 'Erreur inconnue';
         throw Exception(errorMessage);
       }
     } on SocketException {
@@ -198,7 +202,8 @@ class AuthService {
   Future<void> sendPasswordResetEmail(String email) async {
     if (email.trim().isEmpty) throw Exception('Email requis.');
 
-    if (!_emailRegex.hasMatch(email)) throw Exception('Adresse email invalide.');
+    if (!_emailRegex.hasMatch(email))
+      throw Exception('Adresse email invalide.');
 
     final url = Uri.parse('$baseUrl/auth/forget-password');
 
@@ -242,7 +247,8 @@ class AuthService {
 
       if (response.statusCode != 200) {
         final error = jsonDecode(response.body);
-        throw Exception(error['message'] ?? 'Échec de la mise à jour du mot de passe.');
+        throw Exception(
+            error['message'] ?? 'Échec de la mise à jour du mot de passe.');
       }
     } catch (e) {
       throw Exception('Erreur lors du changement de mot de passe : $e');
@@ -251,13 +257,13 @@ class AuthService {
 
   // =================== SIGN OUT ===================
   Future<void> signOut() async {
-   
+    try {
       await _auth.signOut();
 
       final googleSignIn = GoogleSignIn();
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.signOut();
-        await googleSignIn.disconnect();
+      //  await googleSignIn.disconnect();
       }
 
       final prefs = await SharedPreferences.getInstance();
@@ -266,9 +272,10 @@ class AuthService {
       await prefs.remove('refresh_token');
 
       log('Déconnexion réussie');
-    } 
-    
-  
+    } catch (e) {
+      log('Erreur pendant signOut: $e');
+    }
+  }
 
   // =================== CREATE USER WRAPPER ===================
   Future<Map<String, dynamic>> createUserWithEmailPasswordAndRole({

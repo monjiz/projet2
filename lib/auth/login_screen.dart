@@ -98,11 +98,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       targetScreen = const TravailleurScreen();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Type d\'utilisateur inconnu')),
+                        const SnackBar(
+                            content: Text('Type d\'utilisateur inconnu')),
                       );
                       return;
                     }
-                    
+
                     // Navigation avec suppression de l'historique
                     Navigator.pushAndRemoveUntil(
                       context,
@@ -135,16 +136,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Sign In',
                               style: TextStyle(
                                 fontSize: 20,
-                                fontWeight: FontWeight.bold,
                                 fontFamily: 'RecklessNeue',
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text("Don't have an account? "),
+                                Text(
+                                  "Don't have an account? ",
+                                  style: TextStyle(
+                
+                                    fontSize:
+                                        MediaQuery.of(context).size.width *
+                                            0.035, // Taille dynamique
+                                  ),
+                                ),
                                 GestureDetector(
                                   onTap: () => Navigator.push(
                                     context,
@@ -152,11 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                       builder: (_) => const SignupScreen(),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Sign Up',
                                     style: TextStyle(
                                       color: Color(0xFF3B82F6),
                                       fontWeight: FontWeight.w600,
+                                      fontSize:
+                                          MediaQuery.of(context).size.width *
+                                              0.035, // Taille dynamique
                                     ),
                                   ),
                                 ),
@@ -165,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 26),
                       CustomTextField(
                         label: "Email",
                         hint: "Enter your email",
@@ -178,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 15, vertical: 12),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 15),
                       CustomTextField(
                         label: "Password",
                         hint: "Enter your password",
@@ -227,17 +238,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 20),
                       isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton.icon(
                               icon:
                                   const Icon(Icons.login, color: Colors.white),
+                                  
                               label: const Text(
                                 'Sign In',
                                 style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 10.5,
                                     fontWeight: FontWeight.bold,
+
                                     color: Colors.white),
                               ),
                               onPressed: () {
@@ -258,27 +271,26 @@ class _LoginScreenState extends State<LoginScreen> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF3B82F6),
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: 0, horizontal: 99),
+                                    vertical: 3, horizontal: 99),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                             ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 18),
                       const Center(
                         child: Text(
                           'Or',
                           style: TextStyle(color: Colors.black54),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 18),
                       SocialButton(
                         icon: 'assets/images/google.png',
                         label: 'Continue with Google',
                         onPressed: () async => context.read<LoginBloc>().add(
-                                GoogleSignInSubmitted(
-                                    context: context),
-                              ),
+                              GoogleSignInSubmitted(context: context),
+                            ),
                         size: 26,
                         borderColor: Colors.grey[300]!,
                         borderRadius: 10,
