@@ -2,13 +2,14 @@ import 'package:auth_firebase/auth/login/bloc/login_bloc.dart';
 import 'package:auth_firebase/auth/login/bloc/login_event.dart';
 import 'package:auth_firebase/auth/login_screen.dart';
 import 'package:auth_firebase/presentation/screens/paimentScreens/payment_details_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:auth_firebase/presentation/screens/AdminScreens/manage_roles_page.dart';
-import 'package:auth_firebase/presentation/screens/AdminScreens/manage_projects_screen.dart';
-import 'package:auth_firebase/presentation/screens/AdminScreens/manage_users_screen.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/Manage_projects_screens/manage_projects_screen.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/Manage_Users_Screens/manage_users_screen.dart';
 import 'package:auth_firebase/presentation/screens/paimentScreens/subscriptions_screen.dart';
-import 'package:auth_firebase/presentation/screens/AdminScreens/announcements_screen.dart';
-import 'package:auth_firebase/presentation/screens/AdminScreens/notifications_screen.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/Manage_announcements_Screens/announcements_screen.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/Manage_Notifications_Screens/notifications_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -32,7 +33,7 @@ class HomeScreen extends StatelessWidget {
         mini: true,
         onPressed: () {
           Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const AnnouncementsScreen()));
+              MaterialPageRoute(builder: (_) => AnnouncementsScreen()));
         },
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
@@ -578,9 +579,10 @@ _buildDrawerItem(
       }),
       _AdminAction(
           "Announcements", Icons.campaign_outlined, const Color(0xFFEE7048),
-          () {
+          () async {
+
         Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AnnouncementsScreen()));
+            MaterialPageRoute(builder: (_) => AnnouncementsScreen()));
       }),
       _AdminAction("Payments", Icons.payment_outlined, const Color(0xFF34A853),
           () {

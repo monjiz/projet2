@@ -1,13 +1,16 @@
 import 'dart:async';
 
+import 'package:auth_firebase/data/repositories/annonce_repository.dart';
 import 'package:auth_firebase/data/repositories/user_repository.dart';
 import 'package:auth_firebase/logique(bloc)/user/user_bloc.dart';
 import 'package:auth_firebase/logique(bloc)/user/user_event.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Auth et Services
-import 'package:firebase_core/firebase_core.dart'; // 👈 Corrigé : Firebase doit être importé
+import 'package:firebase_core/firebase_core.dart'; // Firebase import corrigé
+import 'package:shared_preferences/shared_preferences.dart'; // IMPORT MANQUANT
+
 import 'package:auth_firebase/auth/auth_service.dart';
 import 'package:auth_firebase/data/services/api_service.dart';
 import 'package:auth_firebase/data/repositories/client_repository.dart';
@@ -24,7 +27,7 @@ import 'package:auth_firebase/logique(bloc)/client/client_event.dart';
 import 'package:auth_firebase/auth/login/bloc/login_bloc.dart';
 import 'package:auth_firebase/auth/forgotpassword/bloc/forgotpassword_bloc.dart';
 
-// Écrans
+// Screens
 import 'package:auth_firebase/auth/forgot_password_screen.dart';
 import 'package:auth_firebase/auth/login_screen.dart';
 import 'package:auth_firebase/presentation/screens/paimentScreens/add_card_screen.dart';
@@ -36,21 +39,19 @@ import 'package:auth_firebase/presentation/screens/WelcomeScreens/welcome.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/client_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/client_profil_screen.dart';
 import 'package:auth_firebase/presentation/screens/ClientScreens/ClientEditProfileScreen.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); //  Important pour que Firebase fonctionne
+  await Firebase.initializeApp();
 
-  final apiService = ApiService();
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('auth_token') ?? '';
 
   runApp(
     MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (_) =>
-              AnnouncementBloc(apiService: apiService),
-        ),
         BlocProvider(
           create: (_) => NotificationBloc()..add(LoadNotifications()),
         ),
@@ -67,10 +68,14 @@ Future<void> main() async {
           create: (_) => ClientBloc(clientRepository: ClientRepository())
             ..add(LoadClientDashboard()),
         ),
-
-         BlocProvider(
+        BlocProvider(
           create: (_) => UserBloc(UserRepository())..add(LoadUsers()),
         ),
+       BlocProvider(
+  create: (context) => AnnouncementBloc(
+    repository: AnnouncementRepository(),
+  )..add(LoadAnnouncements()),
+)
       ],
       child: const MyApp(),
     ),
@@ -85,15 +90,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
-
-
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(
           Theme.of(context).textTheme,
         ),
         primarySwatch: Colors.blue,
       ),
-
       routes: {
         '/': (context) => const SplashScreen(),
         '/welcome': (context) => const Welcome(),
@@ -105,8 +107,8 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/addcard': (context) => AddCardScreen(),
         '/paiment': (context) => PaymentDetailsScreen(),
-        '/client': (context) => ClientScreen(), // 
-        '/forgot_password': (context) => const ForgotPasswordScreen(), // 
+        '/client': (context) => ClientScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
       },
     );
   }

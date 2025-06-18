@@ -25,23 +25,42 @@ class UserRepository {
     }
   }
 
-Future<void> addUser( user, String token) async {
-  final url = Uri.parse('https://api.platform.dat.tn/api/v1/users/user');
+  Future<void> addUser(UserModel user, String token) async {
+    final url = Uri.parse('https://api.platform.dat.tn/api/v1/users/user');
 
-  final response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: jsonEncode(user.toJson()),
-  );
+    final body = jsonEncode(user.toJson());
+    print("DEBUG: Requête POST vers $url");
+    print("DEBUG: Corps JSON = $body");
 
-  if (response.statusCode != 200 && response.statusCode != 201) {
-    throw Exception('Erreur lors de l’ajout utilisateur : ${response.body}');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    print("DEBUG: Status code = ${response.statusCode}");
+    print("DEBUG: Corps réponse = ${response.body}");
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      // Tu peux parser le corps pour un message plus clair si c'est JSON
+      String errorMessage = "Erreur lors de l’ajout utilisateur";
+      try {
+        final errorJson = jsonDecode(response.body);
+        if (errorJson['message'] != null) {
+          errorMessage = errorJson['message'];
+        } else if (errorJson['error'] != null) {
+          errorMessage = errorJson['error'];
+        }
+      } catch (_) {
+        // ignore parsing error
+      }
+
+      throw Exception('$errorMessage (status ${response.statusCode})');
+    }
   }
-}
-
 
   Future<void> deleteUser(String id) async {
     final response =

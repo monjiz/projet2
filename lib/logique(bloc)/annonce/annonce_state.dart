@@ -14,7 +14,6 @@ class AnnouncementLoading extends AnnouncementState {}
 
 class AnnouncementLoaded extends AnnouncementState {
   final List<Annonce> annonces;
-
   const AnnouncementLoaded(this.annonces);
 
   @override
@@ -25,8 +24,15 @@ class AnnouncementEmpty extends AnnouncementState {}
 
 class AnnouncementError extends AnnouncementState {
   final String message;
-
   const AnnouncementError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class AnnouncementOperationSuccess extends AnnouncementState {
+  final String message;
+  const AnnouncementOperationSuccess(this.message);
 
   @override
   List<Object?> get props => [message];

@@ -14,18 +14,20 @@ class ManageUsersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Gérer les utilisateurs')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final user = await Navigator.push<UserModel?>(
-            context,
-            MaterialPageRoute(builder: (_) => const AddUserScreen()),
-          );
-          if (user != null && context.mounted) {
-            context.read<UserBloc>().add(AddUserEvent(user));
-          }
-        },
-        backgroundColor: Colors.deepPurpleAccent,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+  onPressed: () async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddUserScreen()),
+    );
+
+    if (context.mounted) {
+      context.read<UserBloc>().add(LoadUsers()); // Recharge la liste après ajout
+    }
+  },
+  backgroundColor: Colors.deepPurpleAccent,
+  child: const Icon(Icons.add, color: Colors.white),
+),
+
       body: BlocBuilder<UserBloc, UserState>(
         builder: (context, state) {
           if (state is UserLoading) {

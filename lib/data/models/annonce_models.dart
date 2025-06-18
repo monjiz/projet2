@@ -1,42 +1,50 @@
-import 'package:equatable/equatable.dart';
-
-class Annonce extends Equatable {
+class Annonce {
   final String id;
-  final String titre;
-  final String contenu;
-  final String datePublication;
+  final String title;
+  final String content;
   final String type;
+  final String publishedAt;
 
   Annonce({
     required this.id,
-    required this.titre,
-    required this.contenu,
-    required this.datePublication,
+    required this.title,
+    required this.content,
     required this.type,
+    required this.publishedAt,
   });
 
-  // Conversion JSON vers un objet Annonce
   factory Annonce.fromJson(Map<String, dynamic> json) {
     return Annonce(
-      id: json['id'] as String,
-      titre: json['titre'] as String,
-      contenu: json['contenu'] as String,
-      datePublication: json['datePublication'] as String,
-      type: json['type'] as String,
+      id: json['id'] ?? '',
+      title: json['title'],
+      content: json['content'],
+      type: json['type'],
+      publishedAt: json['publishedAt'],
     );
   }
 
-  // Conversion objet Annonce vers JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'titre': titre,
-      'contenu': contenu,
-      'datePublication': datePublication,
+      'title': title,
+      'content': content,
       'type': type,
+      'publishedAt': publishedAt,
     };
   }
 
-  @override
-  List<Object?> get props => [id, titre, contenu, datePublication, type];
+  Annonce copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? type,
+    String? publishedAt,
+  }) {
+    return Annonce(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      publishedAt: publishedAt ?? this.publishedAt,
+    );
+  }
 }

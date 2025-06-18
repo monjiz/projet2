@@ -18,20 +18,8 @@ class ClientRepository {
   Future<List<Annonce>> fetchAnnonces() async {
     await Future.delayed(const Duration(seconds: 1));
     return [
-      Annonce(
-        id: "1",
-        titre: "Projet Web",
-        contenu: "Création d'un site web",
-        datePublication: "2025-06-01",
-        type: "Offre",
-      ),
-      Annonce(
-        id: "2",
-        titre: "Application Mobile",
-        contenu: "Développement d'une app",
-        datePublication: "2025-06-02",
-        type: "Demande",
-      ),
+      
+     
     ];
   }
 

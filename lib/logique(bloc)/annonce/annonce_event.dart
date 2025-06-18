@@ -3,35 +3,31 @@ import 'package:auth_firebase/data/models/annonce_models.dart';
 
 abstract class AnnouncementEvent extends Equatable {
   const AnnouncementEvent();
-
   @override
   List<Object?> get props => [];
 }
 
-class LoadAnnonces extends AnnouncementEvent {}
+class LoadAnnouncements extends AnnouncementEvent {}
 
 class AddAnnouncement extends AnnouncementEvent {
-  final Annonce announcement;
-
-  const AddAnnouncement(this.announcement);
+  final Annonce annonce;
+  const AddAnnouncement(this.annonce);
 
   @override
-  List<Object?> get props => [announcement];
+  List<Object?> get props => [annonce];
 }
 
 class EditAnnouncement extends AnnouncementEvent {
   final String id;
-  final Annonce updated;
-
-  const EditAnnouncement(this.id, this.updated);
+  final Annonce annonce;
+  const EditAnnouncement(this.id, this.annonce);
 
   @override
-  List<Object?> get props => [id, updated];
+  List<Object?> get props => [id, annonce];
 }
 
 class DeleteAnnouncement extends AnnouncementEvent {
   final String id;
-
   const DeleteAnnouncement(this.id);
 
   @override

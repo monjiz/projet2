@@ -300,7 +300,7 @@ class ClientScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          annonce.titre,
+                          annonce.title,
                           style: GoogleFonts.poppins(
                             fontSize: constraints.maxWidth * 0.035,
                             fontWeight: FontWeight.w500,
@@ -310,7 +310,7 @@ class ClientScreen extends StatelessWidget {
                           maxLines: 1,
                         ),
                         Text(
-                          "Publiée le: ${annonce.datePublication}",
+                          "Publiée le: ${annonce.publishedAt}",
                           style: GoogleFonts.poppins(
                             fontSize: constraints.maxWidth * 0.03,
                             color: Colors.grey[600],

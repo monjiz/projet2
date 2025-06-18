@@ -1,77 +1,72 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:auth_firebase/logique(bloc)/annonce/annonce_event.dart';
-import 'package:auth_firebase/logique(bloc)/annonce/annonce_state.dart';
-import 'package:auth_firebase/data/services/api_service.dart';
 import 'package:auth_firebase/data/models/annonce_models.dart';
+import 'package:auth_firebase/data/repositories/annonce_repository.dart';
+import 'annonce_event.dart';
+import 'annonce_state.dart';
 
 class AnnouncementBloc extends Bloc<AnnouncementEvent, AnnouncementState> {
-  final ApiService apiService;
+  final AnnouncementRepository repository;
 
-  AnnouncementBloc({
-    required this.apiService,
-    String? authToken, // Paramètre optionnel pour l'authentification
-  }) : super(AnnouncementInitial()) { // Changement d'état initial
-    // Chargement des annonces
-    on<LoadAnnonces>((event, emit) async {
+  AnnouncementBloc({required this.repository}) : super(AnnouncementInitial()) {
+    // Charger les annonces
+    on<LoadAnnouncements>((event, emit) async {
       emit(AnnouncementLoading());
       try {
-        final annonces = await apiService.fetchAnnonces();
+        final annonces = await repository.fetchAnnouncements();
         if (annonces.isEmpty) {
           emit(AnnouncementEmpty());
         } else {
           emit(AnnouncementLoaded(annonces));
         }
-      } on Exception catch (e) {
-        emit(AnnouncementError('Impossible de charger les annonces. Veuillez réessayer.'));
+      } catch (e) {
+        emit(AnnouncementError(_mapErrorToMessage(e)));
       }
     });
 
-    // Ajout d'une annonce
+    // Ajouter une annonce
     on<AddAnnouncement>((event, emit) async {
       emit(AnnouncementLoading());
       try {
-        await apiService.addAnnonce(event.announcement);
-        final annonces = await apiService.fetchAnnonces();
-        if (annonces.isEmpty) {
-          emit(AnnouncementEmpty());
-        } else {
-          emit(AnnouncementLoaded(annonces));
-        }
-      } on Exception catch (e) {
-        emit(AnnouncementError('Impossible d\'ajouter l\'annonce. Veuillez réessayer.'));
+        await repository.addAnnouncement(event.annonce);
+        emit(const AnnouncementOperationSuccess('Annonce ajoutée avec succès'));
+        add(LoadAnnouncements());
+      } catch (e) {
+        emit(AnnouncementError(_mapErrorToMessage(e)));
       }
     });
 
-    // Modification d'une annonce
+    // Modifier une annonce
     on<EditAnnouncement>((event, emit) async {
       emit(AnnouncementLoading());
       try {
-        await apiService.updateAnnonce(event.id, event.updated);
-        final annonces = await apiService.fetchAnnonces();
-        if (annonces.isEmpty) {
-          emit(AnnouncementEmpty());
-        } else {
-          emit(AnnouncementLoaded(annonces));
-        }
-      } on Exception catch (e) {
-        emit(AnnouncementError('Impossible de modifier l\'annonce. Veuillez réessayer.'));
+        final editedAnnonce = event.annonce.copyWith(
+          publishedAt: DateTime.parse(event.annonce.publishedAt)
+              .toUtc()
+              .toIso8601String(),
+        );
+        await repository.editAnnouncement(event.id, editedAnnonce);
+        emit(const AnnouncementOperationSuccess('Annonce modifiée avec succès'));
+        add(LoadAnnouncements());
+      } catch (e) {
+        emit(AnnouncementError(_mapErrorToMessage(e)));
       }
     });
 
-    // Suppression d'une annonce
+    // Supprimer une annonce
     on<DeleteAnnouncement>((event, emit) async {
       emit(AnnouncementLoading());
       try {
-        await apiService.deleteAnnonce(event.id);
-        final annonces = await apiService.fetchAnnonces();
-        if (annonces.isEmpty) {
-          emit(AnnouncementEmpty());
-        } else {
-          emit(AnnouncementLoaded(annonces));
-        }
-      } on Exception catch (e) {
-        emit(AnnouncementError('Impossible de supprimer l\'annonce. Veuillez réessayer.'));
+        await repository.deleteAnnouncement(event.id);
+        emit(const AnnouncementOperationSuccess('Annonce supprimée avec succès'));
+        add(LoadAnnouncements());
+      } catch (e) {
+        emit(AnnouncementError(_mapErrorToMessage(e)));
       }
     });
+  }
+
+  String _mapErrorToMessage(Object error) {
+    // Personnalise selon ton besoin
+    return error.toString();
   }
 }

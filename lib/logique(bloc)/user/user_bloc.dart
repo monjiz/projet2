@@ -1,7 +1,7 @@
+import 'package:auth_firebase/data/models/user.dart';
 import 'package:auth_firebase/data/repositories/user_repository.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart' show SharedPreferences;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'user_event.dart';
 import 'user_state.dart';
 
@@ -15,46 +15,48 @@ class UserBloc extends Bloc<UserEvent, UserState> {
         final users = await repository.fetchUsers();
         emit(UserLoaded(users));
       } catch (e) {
-        emit(UserError(e.toString()));
+        emit(UserError('Erreur lors du chargement des utilisateurs : ${e.toString()}'));
       }
     });
 
-on<AddUserEvent>((event, emit) async {
-  try {
-    emit(UserLoading());
 
-    // Récupérer le token depuis SharedPreferences (car tu utilises ton backend, pas Firebase Auth)
+
+    
+
+   on<AddUserEvent>((event, emit) async {
+  try {
+    // NE PAS émettre UserLoading ici
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
-    print("DEBUG: token récupéré = $token");
-
     if (token == null || token.isEmpty) {
-      print("DEBUG ERROR: token est null ou vide");
-      emit(UserError("Utilisateur non authentifié (token manquant)"));
+      emit(UserError("Utilisateur non authentifié"));
       return;
     }
 
     await repository.addUser(event.user, token);
-    print("DEBUG: utilisateur ajouté avec succès");
 
+    // Mettre à jour l'état localement sans rechargement API
+    if (state is UserLoaded) {
+      final updatedUsers = List<UserModel>.from((state as UserLoaded).users)
+        ..add(event.user); // Ajout direct du nouvel user
+      emit(UserLoaded(updatedUsers)); // Émission du nouvel état
+    }
+
+    // Recharger pour synchroniser avec le backend (optionnel mais recommandé)
     add(LoadUsers());
-  } catch (e, stackTrace) {
-    print("DEBUG ERROR: exception dans AddUserEvent: $e");
-    print("STACK TRACE:\n$stackTrace");
-    emit(UserError(e.toString()));
+    
+  } catch (e) {
+    emit(UserError('Erreur ajout: ${e.toString()}'));
   }
 });
-
-
-
 
     on<DeleteUserEvent>((event, emit) async {
       try {
         await repository.deleteUser(event.id);
         add(LoadUsers());
       } catch (e) {
-        emit(UserError(e.toString()));
+        emit(UserError('Erreur lors de la suppression de l\'utilisateur : ${e.toString()}'));
       }
     });
 
@@ -63,7 +65,7 @@ on<AddUserEvent>((event, emit) async {
         await repository.updateUserRole(event.id, event.role);
         add(LoadUsers());
       } catch (e) {
-        emit(UserError(e.toString()));
+        emit(UserError('Erreur lors de la mise à jour du rôle : ${e.toString()}'));
       }
     });
   }
