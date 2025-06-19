@@ -1,7 +1,7 @@
+// Fichier : update_annonce_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-
 import 'package:auth_firebase/data/models/annonce_models.dart';
 import 'package:auth_firebase/logique(bloc)/annonce/annonce_bloc.dart';
 import 'package:auth_firebase/logique(bloc)/annonce/annonce_event.dart';
@@ -10,7 +10,8 @@ class UpdateAnnonceScreen extends StatefulWidget {
   final bool isEdit;
   final Annonce? announcement;
 
-  const UpdateAnnonceScreen({super.key, required this.isEdit, this.announcement});
+  const UpdateAnnonceScreen(
+      {super.key, required this.isEdit, this.announcement});
 
   @override
   State<UpdateAnnonceScreen> createState() => _UpdateAnnonceScreenState();
@@ -25,11 +26,14 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
   @override
   void initState() {
     super.initState();
-    titleCtrl = TextEditingController(text: widget.isEdit ? widget.announcement?.title : '');
-    descCtrl = TextEditingController(text: widget.isEdit ? widget.announcement?.content : '');
-    typeCtrl = TextEditingController(text: widget.isEdit ? widget.announcement?.type : '');
+    titleCtrl = TextEditingController(
+        text: widget.isEdit ? widget.announcement?.title : '');
+    descCtrl = TextEditingController(
+        text: widget.isEdit ? widget.announcement?.content : '');
+    typeCtrl = TextEditingController(
+        text: widget.isEdit ? widget.announcement?.type : '');
     selectedDate = widget.isEdit && widget.announcement != null
-        ? DateTime.tryParse(widget.announcement!.publishedAt) ?? DateTime.now()
+        ? DateTime.parse(widget.announcement!.publishedAt).toLocal()
         : DateTime.now();
   }
 
@@ -39,7 +43,6 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
       initialDate: selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      // ⚠️ Supprimé: locale: const Locale('fr'),
     );
     if (picked != null) {
       setState(() {
@@ -64,12 +67,18 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
         ? widget.announcement!.id
         : DateTime.now().millisecondsSinceEpoch.toString();
 
+    final utcDate = selectedDate.toUtc();
+    final isoDate = utcDate.toIso8601String();
+
+    // Ajoute ce log ici pour voir la date envoyée
+    debugPrint('Date envoyée au backend : $isoDate');
+
     final newAnn = Annonce(
       id: id,
       title: title,
       content: desc,
       type: type,
-      publishedAt: selectedDate.toIso8601String(),
+      publishedAt: isoDate,
     );
 
     if (widget.isEdit) {
@@ -78,7 +87,7 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
       context.read<AnnouncementBloc>().add(AddAnnouncement(newAnn));
     }
 
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   @override
@@ -94,40 +103,39 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildFacebookInputField(
+              _buildInputField(
                 controller: titleCtrl,
                 label: 'Titre',
                 hintText: 'Ajouter un titre',
               ),
               const SizedBox(height: 16),
-              _buildFacebookInputField(
+              _buildInputField(
                 controller: descCtrl,
                 label: 'Description',
                 hintText: 'Décrivez votre annonce',
                 maxLines: 4,
               ),
               const SizedBox(height: 16),
-              _buildFacebookInputField(
+              _buildInputField(
                 controller: typeCtrl,
                 label: 'Type',
                 hintText: 'Ex: éducation, événement, offre...',
               ),
               const SizedBox(height: 24),
-
               Text(
                 'Date de publication',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700]),
               ),
               const SizedBox(height: 8),
               InkWell(
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
@@ -135,26 +143,25 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                      const Icon(Icons.calendar_today,
+                          size: 20, color: Colors.grey),
                       const SizedBox(width: 12),
                       Text(
-                        DateFormat.yMMMMd('fr_FR').format(selectedDate),
+                        "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
                         style: const TextStyle(fontSize: 16),
                       ),
                       const Spacer(),
                       Text(
                         'Modifier',
                         style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            color: Theme.of(context).primaryColor,
+                            fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 32),
-
               ElevatedButton(
                 onPressed: _saveAnnonce,
                 style: ElevatedButton.styleFrom(
@@ -167,10 +174,9 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
                 child: Text(
                   widget.isEdit ? 'Mettre à jour' : 'Publier',
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
               ),
             ],
@@ -180,7 +186,7 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
     );
   }
 
-  Widget _buildFacebookInputField({
+  Widget _buildInputField({
     required TextEditingController controller,
     required String label,
     String? hintText,
@@ -192,17 +198,14 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-          ),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[700]),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
+              color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
           child: TextField(
             controller: controller,
             maxLines: maxLines,
@@ -210,7 +213,6 @@ class _UpdateAnnonceScreenState extends State<UpdateAnnonceScreen> {
               hintText: hintText,
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
-              filled: false,
             ),
           ),
         ),

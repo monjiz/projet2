@@ -1,19 +1,22 @@
 import 'dart:async';
 
 import 'package:auth_firebase/data/repositories/annonce_repository.dart';
+import 'package:auth_firebase/data/repositories/subscription_repository.dart';
 import 'package:auth_firebase/data/repositories/user_repository.dart';
+import 'package:auth_firebase/logique(bloc)/subscription/subscription_bloc.dart';
+import 'package:auth_firebase/logique(bloc)/subscription/subscription_event.dart';
 import 'package:auth_firebase/logique(bloc)/user/user_bloc.dart';
 import 'package:auth_firebase/logique(bloc)/user/user_event.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:firebase_core/firebase_core.dart'; // Firebase import corrigé
-import 'package:shared_preferences/shared_preferences.dart'; // IMPORT MANQUANT
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:auth_firebase/auth/auth_service.dart';
 import 'package:auth_firebase/data/services/api_service.dart';
-import 'package:auth_firebase/data/repositories/client_repository.dart';
+import 'package:auth_firebase/data/repositories/projet_repository.dart';
 import 'package:auth_firebase/data/repositories/role_permission_repository_impl.dart';
 
 // BLoCs
@@ -22,8 +25,8 @@ import 'package:auth_firebase/logique(bloc)/annonce/annonce_event.dart';
 import 'package:auth_firebase/logique(bloc)/notification/notification_bloc.dart';
 import 'package:auth_firebase/logique(bloc)/notification/notification_event.dart';
 import 'package:auth_firebase/logique(bloc)/permissions/role_permission_bloc.dart';
-import 'package:auth_firebase/logique(bloc)/client/client_bloc.dart';
-import 'package:auth_firebase/logique(bloc)/client/client_event.dart';
+import 'package:auth_firebase/logique(bloc)/projet/projet_bloc.dart';
+import 'package:auth_firebase/logique(bloc)/projet/projet_event.dart';
 import 'package:auth_firebase/auth/login/bloc/login_bloc.dart';
 import 'package:auth_firebase/auth/forgotpassword/bloc/forgotpassword_bloc.dart';
 
@@ -49,6 +52,9 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token') ?? '';
 
+  // ✅ Création du repository
+  final projectRepository = ProjectRepository();
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -65,17 +71,18 @@ Future<void> main() async {
           create: (_) => ForgotPasswordBloc(authService: AuthService()),
         ),
         BlocProvider(
-          create: (_) => ClientBloc(clientRepository: ClientRepository())
-            ..add(LoadClientDashboard()),
-        ),
-        BlocProvider(
           create: (_) => UserBloc(UserRepository())..add(LoadUsers()),
         ),
-       BlocProvider(
-  create: (context) => AnnouncementBloc(
-    repository: AnnouncementRepository(),
-  )..add(LoadAnnouncements()),
-)
+        BlocProvider(
+          create: (_) => AnnouncementBloc(repository: AnnouncementRepository())..add(LoadAnnouncements()),
+        ),
+        BlocProvider(
+          create: (_) => SubscriptionBloc(SubscriptionRepository())..add(LoadPlans()),
+        ),
+        // ✅ Bloc pour projets
+        BlocProvider(
+          create: (_) => ProjectBloc(repository: projectRepository, token: token)..add(LoadProjectsEvent()),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -109,6 +116,8 @@ class MyApp extends StatelessWidget {
         '/paiment': (context) => PaymentDetailsScreen(),
         '/client': (context) => ClientScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
+        // Ajoute cette route si tu veux accéder à ProjectScreen directement
+        // '/projects': (context) => const ProjectScreen(),
       },
     );
   }

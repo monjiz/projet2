@@ -1,8 +1,8 @@
 import 'package:auth_firebase/data/models/notifications.dart';
 import 'package:auth_firebase/logique(bloc)/notification/notification_bloc.dart';
 import 'package:auth_firebase/logique(bloc)/notification/notification_event.dart';
+import 'package:auth_firebase/presentation/screens/AdminScreens/Manage_Notifications_Screens/NotificationHistoryScreen';
 //import 'package:auth_firebase/logique(bloc)/notification/notification_state.dart';
-import 'package:auth_firebase/presentation/screens/AdminScreens/NotificationHistoryScreen';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -102,7 +102,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const NotificationHistoryScreen(),
+                  builder: (_) =>  NotificationHistoryScreen(),
                 ),
               );
             },

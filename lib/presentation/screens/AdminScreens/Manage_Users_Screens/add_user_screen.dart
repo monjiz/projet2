@@ -12,7 +12,7 @@ class AddUserScreen extends StatefulWidget {
 }
 
 class _AddUserScreenState extends State<AddUserScreen> {
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _fullnameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -27,7 +27,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _fullnameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -49,7 +49,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
   }
 
   Future<void> _submit() async {
-    final fullName = _nameController.text.trim();
+    final fullName = _fullnameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
@@ -69,13 +69,15 @@ class _AddUserScreenState extends State<AddUserScreen> {
       return;
     }
 
-    final user = UserModel(
-      id: '',
-      fullName: fullName,
-      email: email,
-      type: _selectedRole!,
-      password: password, // Important : passer le password au modèle
-    );
+  final user = UserModel(
+  id: '',
+  name: fullName,
+  email: email,
+  type: _selectedRole!,  // Garde-le, même si backend ne le demande pas, ça peut servir ailleurs
+  password: password,
+  confirmPassword: confirmPassword,  // Important d'ajouter ça !
+);
+
 
     setState(() => _isLoading = true);
 
@@ -129,7 +131,7 @@ class _AddUserScreenState extends State<AddUserScreen> {
         child: Column(
           children: [
             TextField(
-              controller: _nameController,
+              controller: _fullnameController,
               decoration: _buildInputDecoration("Full Name", Icons.person),
             ),
             const SizedBox(height: 16),

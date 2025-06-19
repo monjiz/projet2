@@ -42,7 +42,7 @@ class ManageUsersScreen extends StatelessWidget {
                 final user = state.users[index];
                 return ListTile(
                   leading: const Icon(Icons.person),
-                  title: Text(user.fullName), // adapte ici au champ correct
+                  title: Text(user.name), // adapte ici au champ correct
                   subtitle: Text('${user.email}\nRôle : ${user.type}'), // idem ici
                   isThreeLine: true,
                   trailing: Row(
@@ -71,7 +71,7 @@ class ManageUsersScreen extends StatelessWidget {
   }
 
   void _showEditRoleDialog(BuildContext context, UserModel user) {
-    final roles = ['client', 'travailleur', 'administrateur']; // mettre en minuscules si c'est le format backend
+    final roles = ['Client', 'Worker', 'Administrator']; // mettre en minuscules si c'est le format backend
     String selectedRole = user.type.toLowerCase();
 
     showDialog(

@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AnnouncementRepository {
   final String baseUrl = 'https://api.platform.dat.tn/api/v1';
 
-  // ✅ Récupérer le token stocké
+  // Récupérer le token stocké
   Future<String> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
@@ -17,7 +17,7 @@ class AnnouncementRepository {
     return token;
   }
 
-  // ✅ Récupérer toutes les annonces
+  // Récupérer toutes les annonces
   Future<List<Annonce>> fetchAnnouncements() async {
     try {
       final token = await _getToken();
@@ -34,94 +34,146 @@ class AnnouncementRepository {
       log('Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        final List<dynamic> data = decoded['data'];
-        return data.map((e) => Annonce.fromJson(e)).toList();
+        final decoded = json.decode(response.body) as Map<String, dynamic>;
+        
+        // Correction 1: Vérification plus robuste de la structure de réponse
+        if (decoded.containsKey('data') && decoded['data'] is List) {
+          final List<dynamic> data = decoded['data'];
+          return data.map((e) => Annonce.fromJson(e)).toList();
+        } else {
+          throw Exception('Structure de réponse invalide');
+        }
       } else {
-        final error = json.decode(response.body);
-        throw Exception(error['message'] ?? 'Erreur lors du chargement des annonces');
+        // Correction 2: Meilleure gestion des erreurs
+        final errorMessage = _parseErrorMessage(response.body);
+        throw Exception(errorMessage);
+      }
+    } on SocketException {
+      throw Exception('Problème de connexion Internet');
+    } on http.ClientException {
+      throw Exception('Erreur de connexion au serveur');
+    } catch (e) {
+      throw Exception('Erreur fetchAnnouncements : ${e.toString()}');
+    }
+  }
+
+  // Ajouter une annonce
+  Future<Annonce> addAnnouncement(Annonce annonce) async { // Correction 3: Retourne l'annonce créée
+    try {
+      final token = await _getToken();
+
+      final payload = {
+        'title': annonce.title,
+        'content': annonce.content,
+        'type': annonce.type,
+        'publishedAt': annonce.publishedAt, // format ISO
+      };
+
+      log('Add payload: ${json.encode(payload)}'); // Log avant envoi
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/announcements'),
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(payload),
+      );
+
+      log('Add response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 201) {
+        // Correction 4: Retourner l'annonce créée
+        final responseData = json.decode(response.body) as Map<String, dynamic>;
+        return Annonce.fromJson(responseData['data']);
+      } else {
+        final errorMessage = _parseErrorMessage(response.body);
+        throw Exception(errorMessage);
       }
     } on SocketException {
       throw Exception('Problème de connexion Internet');
     } catch (e) {
-      throw Exception('Erreur fetchAnnouncements : $e');
+      throw Exception('Erreur addAnnouncement: ${e.toString()}');
     }
   }
 
-  // ✅ Ajouter une annonce
-  Future<void> addAnnouncement(Annonce annonce) async {
-    final token = await _getToken();
+  // Modifier une annonce
+  Future<Annonce> editAnnouncement(String id, Annonce annonce) async { // Correction 5: Retourne l'annonce modifiée
+    try {
+      final token = await _getToken();
 
-    final payload = {
-      'title': annonce.title,
-      'content': annonce.content,
-      'type': annonce.type,
-       'publishedAt': annonce.publishedAt, // ✅ Ajouter ici
+      final payload = {
+        'title': annonce.title,
+        'content': annonce.content,
+        'type': annonce.type,
+        'publishedAt': annonce.publishedAt,
+      };
 
-    };
+      log('Edit payload: ${json.encode(payload)}');
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/announcements'),
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: json.encode(payload),
-    );
+      final response = await http.patch(
+        Uri.parse('$baseUrl/announcements/$id'),
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(payload),
+      );
 
-    log('Add response: ${response.statusCode} - ${response.body}');
+      log('Edit response: ${response.statusCode} - ${response.body}');
 
-    if (response.statusCode != 201) {
-      final error = json.decode(response.body);
-      throw Exception(error['message'] ?? 'Erreur lors de l\'ajout');
+      if (response.statusCode == 200) {
+        // Correction 6: Retourner l'annonce mise à jour
+        final responseData = json.decode(response.body) as Map<String, dynamic>;
+        return Annonce.fromJson(responseData['data']);
+      } else {
+        final errorMessage = _parseErrorMessage(response.body);
+        throw Exception(errorMessage);
+      }
+    } on SocketException {
+      throw Exception('Problème de connexion Internet');
+    } catch (e) {
+      throw Exception('Erreur editAnnouncement: ${e.toString()}');
     }
   }
-Future<void> editAnnouncement(String id, Annonce annonce) async {
-  final token = await _getToken();
 
-  final payload = {
-    'title': annonce.title,
-    'content': annonce.content,
-    'type': annonce.type,
-    'publishedAt': DateTime.parse(annonce.publishedAt).toUtc().toIso8601String(),
-  };
-
-  final response = await http.patch(
-    Uri.parse('$baseUrl/announcements/$id'),
-    headers: {
-      'accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: json.encode(payload),
-  );
-
-  log('Edit response: ${response.statusCode} - ${response.body}');
-
-  if (response.statusCode != 200) {
-    final error = json.decode(response.body);
-    throw Exception(error['message'] ?? 'Erreur lors de la modification');
-  }
-}
-
-  // ✅ Supprimer une annonce
+  // Supprimer une annonce
   Future<void> deleteAnnouncement(String id) async {
-    final token = await _getToken();
+    try {
+      final token = await _getToken();
 
-    final response = await http.delete(
-      Uri.parse('$baseUrl/announcements/$id'),
-      headers: {
-        'accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+      final response = await http.delete(
+        Uri.parse('$baseUrl/announcements/$id'),
+        headers: {
+          'accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    log('Delete response: ${response.statusCode} - ${response.body}');
+      log('Delete response: ${response.statusCode} - ${response.body}');
 
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      final error = json.decode(response.body);
-      throw Exception(error['message'] ?? 'Erreur lors de la suppression');
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        final errorMessage = _parseErrorMessage(response.body);
+        throw Exception(errorMessage);
+      }
+    } on SocketException {
+      throw Exception('Problème de connexion Internet');
+    } catch (e) {
+      throw Exception('Erreur deleteAnnouncement: ${e.toString()}');
+    }
+  }
+
+  // Correction 7: Fonction utilitaire pour parser les messages d'erreur
+  String _parseErrorMessage(String responseBody) {
+    try {
+      final errorJson = json.decode(responseBody) as Map<String, dynamic>;
+      return errorJson['message'] ?? 
+             errorJson['error'] ??
+             'Erreur inconnue (${responseBody.length > 100 ? responseBody.substring(0, 100) + '...' : responseBody})';
+    } catch (e) {
+      return 'Erreur inconnue (${responseBody.length > 100 ? responseBody.substring(0, 100) + '...' : responseBody})';
     }
   }
 }

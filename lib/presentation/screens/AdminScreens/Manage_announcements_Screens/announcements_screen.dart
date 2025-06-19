@@ -52,17 +52,17 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     );
   }
 
+  // CORRECTION : Nouvelle méthode de formatage avec conversion UTC -> Local
   String _formatDate(String? dateStr) {
     if (!localeInitialized) return 'Chargement...';
     try {
       if (dateStr == null || dateStr.isEmpty) return 'Date inconnue';
-      DateTime date;
-      if (dateStr.length == 10) {
-        date = DateFormat('yyyy-MM-dd').parse(dateStr);
-      } else {
-        date = DateTime.parse(dateStr);
-      }
-      return DateFormat.yMMMMd('fr').format(date);
+      
+      // Parser la date en UTC puis convertir en local
+      final utcDate = DateTime.parse(dateStr).toUtc();
+      final localDate = utcDate.toLocal();
+      
+      return DateFormat.yMMMMd('fr').format(localDate);
     } catch (e) {
       debugPrint('Erreur parsing date: $e');
       return 'Date invalide';
@@ -83,13 +83,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
         backgroundColor: const Color.fromARGB(255, 139, 47, 197),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => const UpdateAnnonceScreen(isEdit: false),
             ),
           );
+          if (result == true) {
+            context.read<AnnouncementBloc>().add(LoadAnnouncements());
+          }
         },
         backgroundColor: const Color(0xFFB175F9),
         child: const Icon(Icons.add, color: Colors.white),
@@ -100,6 +103,11 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
+          }
+          if (state is AnnouncementLoaded) {
+            for (var ann in state.annonces) {
+              debugPrint('Annonce chargée id=${ann.id} date=${ann.publishedAt}');
+            }
           }
         },
         child: BlocBuilder<AnnouncementBloc, AnnouncementState>(
@@ -116,6 +124,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 itemBuilder: (context, index) {
                   final ann = annonces[index];
                   return Card(
+                    key: ValueKey(ann.id),
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: ListTile(
                       title: Text(ann.title),
@@ -131,13 +140,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => UpdateAnnonceScreen(isEdit: true, announcement: ann),
                                 ),
                               );
+                              if (result == true) {
+                                context.read<AnnouncementBloc>().add(LoadAnnouncements());
+                              }
                             },
                           ),
                           IconButton(

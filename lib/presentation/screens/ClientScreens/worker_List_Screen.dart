@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../data/models/worker_model.dart'; // Assurez-vous que le chemin est correct
-import '../../../logique(bloc)/client/client_bloc.dart';
-import '../../../logique(bloc)/client/client_event.dart';
-import '../../../logique(bloc)/client/client_state.dart';
+import '../../../logique(bloc)/projet/projet_bloc.dart';
+import '../../../logique(bloc)/projet/projet_event.dart';
+import '../../../logique(bloc)/projet/projet_state.dart';
 
 class WorkersListScreen extends StatelessWidget {
   const WorkersListScreen({super.key});

@@ -131,7 +131,7 @@ class ApiService {
   }
 
   /// Récupère tous les projets
-  Future<List<Projet>> fetchProjects() async {
+  Future<List<ProjectModel>> fetchProjects() async {
     try {
       final url = Uri.parse('$baseUrl/projects');
       final response = await http.get(url, headers: _buildHeaders());
@@ -139,7 +139,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data is List) {
-          return data.map<Projet>((json) => Projet.fromJson(json)).toList();
+          return data.map<ProjectModel>((json) => ProjectModel.fromJson(json)).toList();
         } else {
           throw Exception('Format de données inattendu : la réponse n\'est pas une liste');
         }
